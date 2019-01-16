@@ -55,12 +55,12 @@ C_DEFS = -DUSE_HAL_DRIVER -DSTM32L083xx -DREGION_CN470
 
 MCU = $(CPU) -mthumb -mthumb-interwork $(FPU) $(FLOAT-ABI)
 
-INC_FLAGS = $(shell $(HEAD_CMD))	
+INC_FLAGS := $(shell $(HEAD_CMD))	
 
-export CFLAGS = -g $(MCU) -Os  -fsigned-char -ffunction-sections -fdata-sections  $(C_DEFS) -DARM_MATH_CM0PLUS \
+export CFLAGS := -g $(MCU) -Os  -fsigned-char -ffunction-sections -fdata-sections  $(C_DEFS) -DARM_MATH_CM0PLUS \
 	-ffunction-sections -fdata-sections $(INC_FLAGS) -MMD -MP -MF"$(@:%.o=%.cdep)" -MT"$(@)"
 
-export CPPFLAGS = -g $(CPU) $(FPU) $(FLOAT-ABI) -Os  -fsigned-char -ffunction-sections -fdata-sections $(c_DEFS) \
+export CPPFLAGS := -g $(CPU) $(FPU) $(FLOAT-ABI) -Os  -fsigned-char -ffunction-sections -fdata-sections $(c_DEFS) \
 	-ffunction-sections -fdata-sections $(INC_FLAGS) -fabi-version=0 -MMD -MP -MF"$(@:%.o=%.cdep)" -MT"$(@)"
 
 ASFLAGS = -W -Wall
