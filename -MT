@@ -1,107 +1,107 @@
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_cortex.o: \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_cortex.c \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/stm32l0xx_hal_conf.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/include/main.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rcc.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_def.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/CMSIS/Device/ST/STM32L0xx/Include/stm32l0xx.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/CMSIS/Device/ST/STM32L0xx/Include/stm32l083xx.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/CMSIS/Include/core_cm0plus.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/CMSIS/Include/core_cmInstr.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/CMSIS/Include/cmsis_gcc.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/CMSIS/Include/core_cmFunc.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/CMSIS/Device/ST/STM32L0xx/Include/system_stm32l0xx.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rcc_ex.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_gpio.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_gpio_ex.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_dma.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_cortex.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_adc.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_adc_ex.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_flash.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_flash_ex.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_flash_ramfunc.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_i2c.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_i2c_ex.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_iwdg.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_pwr.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_pwr_ex.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rtc.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rtc_ex.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_spi.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_tim.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_tim_ex.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart.h \
- /home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart_ex.h
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_cortex.o: \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_cortex.c \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/stm32l0xx_hal_conf.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/include/main.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rcc.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_def.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/CMSIS/Device/ST/STM32L0xx/Include/stm32l0xx.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/CMSIS/Device/ST/STM32L0xx/Include/stm32l083xx.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/CMSIS/Include/core_cm0plus.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/CMSIS/Include/core_cmInstr.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/CMSIS/Include/cmsis_gcc.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/CMSIS/Include/core_cmFunc.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/CMSIS/Device/ST/STM32L0xx/Include/system_stm32l0xx.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rcc_ex.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_gpio.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_gpio_ex.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_dma.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_cortex.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_adc.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_adc_ex.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_flash.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_flash_ex.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_flash_ramfunc.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_i2c.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_i2c_ex.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_iwdg.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_pwr.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_pwr_ex.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rtc.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rtc_ex.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_spi.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_tim.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_tim_ex.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart_ex.h
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/stm32l0xx_hal_conf.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/stm32l0xx_hal_conf.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/include/main.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/include/main.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rcc.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rcc.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_def.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_def.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/CMSIS/Device/ST/STM32L0xx/Include/stm32l0xx.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/CMSIS/Device/ST/STM32L0xx/Include/stm32l0xx.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/CMSIS/Device/ST/STM32L0xx/Include/stm32l083xx.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/CMSIS/Device/ST/STM32L0xx/Include/stm32l083xx.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/CMSIS/Include/core_cm0plus.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/CMSIS/Include/core_cm0plus.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/CMSIS/Include/core_cmInstr.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/CMSIS/Include/core_cmInstr.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/CMSIS/Include/cmsis_gcc.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/CMSIS/Include/cmsis_gcc.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/CMSIS/Include/core_cmFunc.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/CMSIS/Include/core_cmFunc.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/CMSIS/Device/ST/STM32L0xx/Include/system_stm32l0xx.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/CMSIS/Device/ST/STM32L0xx/Include/system_stm32l0xx.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rcc_ex.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rcc_ex.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_gpio.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_gpio.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_gpio_ex.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_gpio_ex.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_dma.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_dma.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_cortex.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_cortex.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_adc.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_adc.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_adc_ex.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_adc_ex.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_flash.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_flash.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_flash_ex.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_flash_ex.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_flash_ramfunc.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_flash_ramfunc.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_i2c.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_i2c.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_i2c_ex.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_i2c_ex.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_iwdg.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_iwdg.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_pwr.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_pwr.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_pwr_ex.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_pwr_ex.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rtc.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rtc.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rtc_ex.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rtc_ex.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_spi.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_spi.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_tim.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_tim.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_tim_ex.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_tim_ex.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart.h:
 
-/home/wsg/lora-wan/IA-V2-MCU-1.0.2/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart_ex.h:
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart_ex.h:
