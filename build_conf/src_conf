@@ -1,0 +1,18 @@
+m_system 1
+m_system/arch/s32l083/startup
+m_system/arch/s32l083/Src
+m_system/hal_driver/
+framework/freertos/  1
+framework/freertos/portable/GCC/ARM_CM0
+framework/freertos/portable/Common
+framework/freertos/portable/MemMang/heap_4.c
+framework/freertos/CMSIS_RTOS
+framework/module/
+framework/library
+m_user/uart
+m_user/cmdline
+m_user/lwrun
+m_user/lwlinkwan
+m_user/lwtx-cw
+m_user/lwrx-sensi
+m_user/lwping-pong

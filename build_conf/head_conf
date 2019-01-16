@@ -1,0 +1,17 @@
+framework 1
+framework/freertos/include 
+framework/freertos/portable/GCC/ARM_CM0
+framework/freertos/portable/Common
+framework/freertos/CMSIS_RTOS
+framework/library
+framework/module/frtos_io/frtos_driver.h
+framework/module
+m_system/arch/s32l083/include
+
+m_system/arch/s32l083/libhal 1
+m_system/arch/s32l083/libhal/Drivers/CMSIS/Include
+m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc
+m_system/arch/s32l083/libhal/Drivers/CMSIS/Device/ST/STM32L0xx/Include
+m_system/hal_driver
+m_system/include
+m_user
