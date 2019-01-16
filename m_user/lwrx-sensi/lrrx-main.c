@@ -202,11 +202,12 @@ static int lorawan_rx( void )
 
     while( 1 )
     {
+		//debug("%s, line = %d\r\n",__FUNCTION__, __LINE__);
         BoardLowPowerHandler( );
         // Process Radio IRQ
         if( Radio.IrqProcess != NULL )
         {
-            Radio.IrqProcess( );
+            Radio.IrqProcess( );	
         }
 		if(g_size > 0)
 		{
@@ -234,7 +235,7 @@ static __const struct task lorawanrx = {
 	.main  = lorawan_rx,
 };
 
-TASK_REGISTER(lorawanrx);
+//TASK_REGISTER(lorawanrx);
 #endif
 
 

@@ -117,5 +117,5 @@ static __const struct task tap2_task  = {
 /**************************************************************************************
 * description    : 任务注册
 **************************************************************************************/
-//TASK_REGISTER(tap1_task);
-//TASK_REGISTER(tap2_task);
+TASK_REGISTER(tap1_task);
+TASK_REGISTER(tap2_task);

@@ -58,25 +58,25 @@
 typedef enum eFType
 {
     /*!
-     * Frame type  A
+     * Frame type A
      *
      * FOptsLen > 0, Fopt present, FPort > 0, FRMPayload present
      */
     FRAME_TYPE_A,
     /*!
-     * LoRaWAN device class B
+     * Frame type B
      *
      * FOptsLen > 0, Fopt present, FPort not present, FRMPayload not present
      */
     FRAME_TYPE_B,
     /*!
-     * LoRaWAN device class C
+     * Frame type C
      *
      * FOptsLen = 0, Fopt not present, FPort = 0 , FRMPayload containing MAC commands
      */
     FRAME_TYPE_C,
     /*!
-     * LoRaWAN device class D
+     * Frame type D
      *
      * FOptsLen = 0, Fopt not present, FPort > 0 , FRMPayload present
      */
@@ -163,17 +163,9 @@ typedef enum eKeyIdentifier
      */
     APP_S_KEY,
     /*!
-     * Multicast gennerate app key
-     */
-    MC_GEN_APP_KEY = LORAMAC_CRYPTO_MULITCAST_KEYS,
-    /*!
-     * Multicast root key
-     */
-    MC_ROOT_KEY,
-    /*!
      * Multicast key encryption key
      */
-    MC_KE_KEY,
+    MC_KE_KEY = LORAMAC_CRYPTO_MULITCAST_KEYS,
     /*!
      * Multicast root key index 0
      */
@@ -555,13 +547,6 @@ typedef enum eLoRaMacBatteryLevel
      */
     BAT_LEVEL_NO_MEASURE             = 0xFF,
 }LoRaMacBatteryLevel_t;
-
-
-/*!
- * Signature of callback function to be called by this module when the
- * non-volatile needs to be saved.
- */
-typedef void ( *EventNvmCtxChanged )( void );
 
 #endif // __LORAMAC_TYPES_H__
 

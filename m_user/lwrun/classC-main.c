@@ -22,7 +22,6 @@
  */
 
 /*! \file classC/NucleoL073/main.c */
-
 #include <stdio.h>
 #include "utilities.h"
 #include "board.h"
@@ -178,6 +177,13 @@ static TimerEvent_t Led2Timer;
 static bool NextTx = true;
 
 /*!
+ * Indicates if LoRaMacProcess call is pending.
+ * 
+ * \warning If variable is equal to 0 then the MCU can be set in low power mode
+ */
+static uint8_t IsMacProcessPending = 0;
+
+/*!
  * Device states
  */
 static enum eDeviceState
@@ -246,13 +252,29 @@ extern Gpio_t Led2; // Rx
  */
 const char* MacStatusStrings[] =
 {
-    "OK", "Busy", "Service unknown", "Parameter invalid", "Frequency invalid",
-    "Datarate invalid", "Frequency or datarate invalid", "No network joined",
-    "Length error", "Device OFF", "Region not supported", "Skipped APP data",
-    "Duty-cycle restricted", "No channel found", "No free channel found",
-    "Busy beacon reserved time", "Busy ping-slot window time",
-    "Busy uplink collision", "Crypto error", "FCnt handler error",
-    "MAC command error", "ERROR"
+    "OK",                            // LORAMAC_STATUS_OK
+    "Busy",                          // LORAMAC_STATUS_BUSY
+    "Service unknown",               // LORAMAC_STATUS_SERVICE_UNKNOWN
+    "Parameter invalid",             // LORAMAC_STATUS_PARAMETER_INVALID
+    "Frequency invalid",             // LORAMAC_STATUS_FREQUENCY_INVALID
+    "Datarate invalid",              // LORAMAC_STATUS_DATARATE_INVALID
+    "Frequency or datarate invalid", // LORAMAC_STATUS_FREQ_AND_DR_INVALID
+    "No network joined",             // LORAMAC_STATUS_NO_NETWORK_JOINED
+    "Length error",                  // LORAMAC_STATUS_LENGTH_ERROR
+    "Region not supported",          // LORAMAC_STATUS_REGION_NOT_SUPPORTED
+    "Skipped APP data",              // LORAMAC_STATUS_SKIPPED_APP_DATA
+    "Duty-cycle restricted",         // LORAMAC_STATUS_DUTYCYCLE_RESTRICTED
+    "No channel found",              // LORAMAC_STATUS_NO_CHANNEL_FOUND
+    "No free channel found",         // LORAMAC_STATUS_NO_FREE_CHANNEL_FOUND
+    "Busy beacon reserved time",     // LORAMAC_STATUS_BUSY_BEACON_RESERVED_TIME
+    "Busy ping-slot window time",    // LORAMAC_STATUS_BUSY_PING_SLOT_WINDOW_TIME
+    "Busy uplink collision",         // LORAMAC_STATUS_BUSY_UPLINK_COLLISION
+    "Crypto error",                  // LORAMAC_STATUS_CRYPTO_ERROR
+    "FCnt handler error",            // LORAMAC_STATUS_FCNT_HANDLER_ERROR
+    "MAC command error",             // LORAMAC_STATUS_MAC_COMMAD_ERROR
+    "ClassB error",                  // LORAMAC_STATUS_CLASS_B_ERROR
+    "Confirm queue error",           // LORAMAC_STATUS_CONFIRM_QUEUE_ERROR
+    "Unknown error",                 // LORAMAC_STATUS_ERROR
 };
 
 /*!
@@ -260,11 +282,23 @@ const char* MacStatusStrings[] =
  */
 const char* EventInfoStatusStrings[] =
 { 
-    "OK", "Error", "Tx timeout", "Rx 1 timeout",
-    "Rx 2 timeout", "Rx1 error", "Rx2 error",
-    "Join failed", "Downlink repeated", "Tx DR payload size error",
-    "Downlink too many frames loss", "Address fail", "MIC fail",
-    "Multicast fail", "Beacon locked", "Beacon lost", "Beacon not found"
+    "OK",                            // LORAMAC_EVENT_INFO_STATUS_OK
+    "Error",                         // LORAMAC_EVENT_INFO_STATUS_ERROR
+    "Tx timeout",                    // LORAMAC_EVENT_INFO_STATUS_TX_TIMEOUT
+    "Rx 1 timeout",                  // LORAMAC_EVENT_INFO_STATUS_RX1_TIMEOUT
+    "Rx 2 timeout",                  // LORAMAC_EVENT_INFO_STATUS_RX2_TIMEOUT
+    "Rx1 error",                     // LORAMAC_EVENT_INFO_STATUS_RX1_ERROR
+    "Rx2 error",                     // LORAMAC_EVENT_INFO_STATUS_RX2_ERROR
+    "Join failed",                   // LORAMAC_EVENT_INFO_STATUS_JOIN_FAIL
+    "Downlink repeated",             // LORAMAC_EVENT_INFO_STATUS_DOWNLINK_REPEATED
+    "Tx DR payload size error",      // LORAMAC_EVENT_INFO_STATUS_TX_DR_PAYLOAD_SIZE_ERROR
+    "Downlink too many frames loss", // LORAMAC_EVENT_INFO_STATUS_DOWNLINK_TOO_MANY_FRAMES_LOSS
+    "Address fail",                  // LORAMAC_EVENT_INFO_STATUS_ADDRESS_FAIL
+    "MIC fail",                      // LORAMAC_EVENT_INFO_STATUS_MIC_FAIL
+    "Multicast fail",                // LORAMAC_EVENT_INFO_STATUS_MULTICAST_FAIL
+    "Beacon locked",                 // LORAMAC_EVENT_INFO_STATUS_BEACON_LOCKED
+    "Beacon lost",                   // LORAMAC_EVENT_INFO_STATUS_BEACON_LOST
+    "Beacon not found"               // LORAMAC_EVENT_INFO_STATUS_BEACON_NOT_FOUND
 };
 
 /*!
@@ -426,7 +460,7 @@ static bool SendFrame( void )
 /*!
  * \brief Function executed on TxNextPacket Timeout event
  */
-static void OnTxNextPacketTimerEvent( void )
+static void OnTxNextPacketTimerEvent( void* context )
 {
     MibRequestConfirm_t mibReq;
     LoRaMacStatus_t status;
@@ -454,7 +488,7 @@ static void OnTxNextPacketTimerEvent( void )
 /*!
  * \brief Function executed on Led 1 Timeout event
  */
-static void OnLed1TimerEvent( void )
+static void OnLed1TimerEvent( void* context )
 {
     TimerStop( &Led1Timer );
     // Switch LED 1 OFF
@@ -464,7 +498,7 @@ static void OnLed1TimerEvent( void )
 /*!
  * \brief Function executed on Led 2 Timeout event
  */
-static void OnLed2TimerEvent( void )
+static void OnLed2TimerEvent( void* context )
 {
     TimerStop( &Led2Timer );
     // Switch LED 2 OFF
@@ -625,7 +659,7 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
     {
         // The server signals that it has pending data to be sent.
         // We schedule an uplink as soon as possible to flush the server.
-        OnTxNextPacketTimerEvent( );
+        OnTxNextPacketTimerEvent( NULL );
     }
     // Check Buffer
     // Check BufferSize
@@ -789,18 +823,6 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
     TimerStart( &Led2Timer );
 
     const char *slotStrings[] = { "1", "2", "C", "Ping-Slot", "Multicast Ping-Slot" };
-    int32_t snr = 0;
-    if( mcpsIndication->Snr & 0x80 ) // The SNR sign bit is 1
-    {
-        // Invert and divide by 4
-        snr = ( ( ~mcpsIndication->Snr + 1 ) & 0xFF ) >> 2;
-        snr = -snr;
-    }
-    else
-    {
-        // Divide by 4
-        snr = ( mcpsIndication->Snr & 0xFF ) >> 2;
-    }
 
     printf( "\r\n###### ===== DOWNLINK FRAME %lu ==== ######\r\n", mcpsIndication->DownLinkCounter );
 
@@ -817,7 +839,7 @@ static void McpsIndication( McpsIndication_t *mcpsIndication )
     printf( "\r\n" );
     printf( "DATA RATE   : DR_%d\r\n", mcpsIndication->RxDatarate );
     printf( "RX RSSI     : %d\r\n", mcpsIndication->Rssi );
-    printf( "RX SNR      : %ld\r\n", snr );
+    printf( "RX SNR      : %d\r\n", mcpsIndication->Snr );
 
     printf( "\r\n" );
 }
@@ -903,12 +925,17 @@ static void MlmeIndication( MlmeIndication_t *mlmeIndication )
     {
         case MLME_SCHEDULE_UPLINK:
         {// The MAC signals that we shall provide an uplink as soon as possible
-            OnTxNextPacketTimerEvent( );
+            OnTxNextPacketTimerEvent( NULL );
             break;
         }
         default:
             break;
     }
+}
+
+void OnMacProcessNotify( void )
+{
+    IsMacProcessPending = 1;
 }
 
 /**
@@ -932,6 +959,7 @@ static int32_t lorawan_run( void )
     macCallbacks.GetBatteryLevel = BoardGetBatteryLevel;
     macCallbacks.GetTemperatureLevel = NULL;
     macCallbacks.NvmContextChange = NvmCtxMgmtEvent;
+    macCallbacks.MacProcessNotify = OnMacProcessNotify;
 
     LoRaMacInitialization( &macPrimitives, &macCallbacks, ACTIVE_REGION );
 
@@ -1154,8 +1182,18 @@ static int32_t lorawan_run( void )
                     printf( "\r\n###### ===== CTXS STORED ==== ######\r\n" );
                 }
 
-                // Wake up through events
-                BoardLowPowerHandler( );
+                CRITICAL_SECTION_BEGIN( );
+                if( IsMacProcessPending == 1 )
+                {
+                    // Clear flag and prevent MCU to go into low power modes.
+                    IsMacProcessPending = 0;
+                }
+                else
+                {
+                    // The MCU wakes up through events
+                    BoardLowPowerHandler( );
+                }
+                CRITICAL_SECTION_END( );
                 break;
             }
             default:
@@ -1168,7 +1206,7 @@ static int32_t lorawan_run( void )
 }
 
 /**************************************************************************************
- * * Description    : 定义通信任务结构
+ * * Description    : 瀹氫箟閫氫俊浠诲姟缁撴瀯
  * **************************************************************************************/
 static __const struct task lorawan = {
 	.idx   = LORAWAN_PID,

@@ -72,24 +72,12 @@ typedef enum eSecureElementStatus
     SECURE_ELEMENT_ERROR,
 }SecureElementStatus_t;
 
-typedef enum eSecureElementMcFlag
-{
-    /*!
-     * static multicast
-     */
-    SECURE_ELEMENT_MC_STATIC = 0,
-    /*!
-     * dynamic multicast
-     */
-    SECURE_ELEMENT_MC_DYNAMIC,
-}SecureElementMcFlag_t;
-
 /*!
  * Signature of callback function to be called by the Secure Element driver when the
  * non volatile context have to be stored.
  *
  */
-//typedef void ( *EventNvmCtxChanged )( void );
+typedef void ( *EventNvmCtxChanged )( void );
 
 /*!
  * Initialization of Secure Element driver
@@ -177,11 +165,4 @@ SecureElementStatus_t SecureElementDeriveAndStoreKey( Version_t version, uint8_t
  */
 SecureElementStatus_t SecureElementRandomNumber( uint32_t* randomNum );
 
-/*!
- * Set multicast flag
- *
- * \param[IN] flag            - multicast flag
- * \retval                    - Status of the operation
- */
-SecureElementStatus_t SecureElementSetMuticastFlag( SecureElementMcFlag_t flag );
 #endif //  __SECURE_ELEMENT_H__

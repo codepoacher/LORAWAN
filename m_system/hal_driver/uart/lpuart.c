@@ -161,12 +161,12 @@ static void lpuart_rx(void* args)
 *************************************************************************************/
 void lprint(char *fmt, ...)
 {
-	uint8_t p[128];
+	uint8_t p[64];
 	va_list args;
 	int n;
 
 	va_start(args, fmt);
-	n = vsnprintf((char*)p, 128, fmt, args);
+	n = vsnprintf((char*)p, 64, fmt, args);
 	if (n < 0)
 		return;
 	va_end(args);

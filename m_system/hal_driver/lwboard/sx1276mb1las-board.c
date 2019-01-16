@@ -182,11 +182,11 @@ void SX1276Reset( void )
 {
     // Enables the TCXO if available on the board design
     SX1276SetBoardTcxo( true );
-
+	//lprint("******rest\r\n");
     // Set RESET pin to 0
     GpioInit( &SX1276.Reset, RADIO_RESET, PIN_OUTPUT, PIN_PUSH_PULL, PIN_NO_PULL, 0 );
 
-    // Wait 1 ms
+	// Wait 1 ms
     DelayMs( 1 );
 
     // Configure RESET as input
@@ -201,12 +201,12 @@ void SX1276SetRfTxPower( int8_t power )
     uint8_t paConfig = 0;
     uint8_t paDac = 0;
 
+	debug("TX POWER %d\r\n",power);
 
     paConfig = SX1276Read( REG_PACONFIG );
     paDac = SX1276Read( REG_PADAC );
 
     paConfig = ( paConfig & RF_PACONFIG_PASELECT_MASK ) | SX1276GetPaSelect( SX1276.Settings.Channel );
-    paConfig = ( paConfig & RF_PACONFIG_MAX_POWER_MASK ) | 0x70;
 
     if( ( paConfig & RF_PACONFIG_PASELECT_PABOOST ) == RF_PACONFIG_PASELECT_PABOOST )
     {
@@ -245,17 +245,23 @@ void SX1276SetRfTxPower( int8_t power )
     }
     else
     {
-        if( power < -1 )
+        if( power > 0 )
         {
-            power = -1;
+            if( power > 15 )
+            {
+                power = 15;
+            }
+            paConfig = ( paConfig & RF_PACONFIG_MAX_POWER_MASK & RF_PACONFIG_OUTPUTPOWER_MASK ) | ( 7 << 4 ) | ( power );
         }
-        if( power > 14 )
+        else
         {
-            power = 14;
+            if( power < -4 )
+            {
+                power = -4;
+            }
+            paConfig = ( paConfig & RF_PACONFIG_MAX_POWER_MASK & RF_PACONFIG_OUTPUTPOWER_MASK ) | ( 0 << 4 ) | ( power + 4 );
         }
-        paConfig = ( paConfig & RF_PACONFIG_OUTPUTPOWER_MASK ) | ( uint8_t )( ( uint16_t )( power + 1 ) & 0x0F );
     }
-	//debug("TX POWER %d\r\n",power);
     SX1276Write( REG_PACONFIG, paConfig );
     SX1276Write( REG_PADAC, paDac );
 }
@@ -268,8 +274,7 @@ static uint8_t SX1276GetPaSelect( uint32_t channel )
     }
     else
     {
-        //return RF_PACONFIG_PASELECT_RFO;
-		return RF_PACONFIG_PASELECT_PABOOST; 
+        return RF_PACONFIG_PASELECT_RFO;
     }
 }
 

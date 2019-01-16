@@ -17,7 +17,7 @@
 #include "config_user.h"
 #include "debug.h"
 #include "flash_driver.h"
-#if 0
+
 static uint8_t run_init = 0;
 
 static void flash_data_init(struct flash_data *flash, uint32_t start_addr, 
@@ -70,4 +70,4 @@ static __const struct applite flash = {
 * Description    : 模块初始化
 **************************************************************************************/
 //APP_REGISTER(flash);
-#endif
+

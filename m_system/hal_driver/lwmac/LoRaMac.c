@@ -44,7 +44,7 @@
 #include "LoRaMacFCntHandler.h"
 #include "LoRaMacCommands.h"
 #include "LoRaMacAdr.h"
-#include "LoRaMacMulticast.h"
+
 #include "LoRaMac.h"
 
 /*!
@@ -78,9 +78,37 @@
 #define BACKOFF_DC_24_HOURS                         10000
 
 /*!
- * If tx retransmission, wait from 0 ~ 10000ms
+ * LoRaMac internal states
  */
-#define TX_RETRY_DELAY                               10000
+enum eLoRaMacState
+{
+    LORAMAC_IDLE          = 0x00000000,
+    LORAMAC_STOPPED       = 0x00000001,
+    LORAMAC_TX_RUNNING    = 0x00000002,
+    LORAMAC_RX            = 0x00000004,
+    LORAMAC_ACK_RETRY     = 0x00000010,
+    LORAMAC_TX_DELAYED    = 0x00000020,
+    LORAMAC_TX_CONFIG     = 0x00000040,
+    LORAMAC_RX_ABORT      = 0x00000080,
+};
+
+/*
+ * LoRa Mac boolean type
+ */
+typedef enum eLoRaMacBoolean
+{
+    LORAMAC_FALSE = 0,
+    LORAMAC_TRUE = !LORAMAC_FALSE
+}LoRaMacBoolean_t;
+
+/*
+ * Request permission state
+ */
+typedef enum eLoRaMacRequestHandling
+{
+    LORAMAC_REQUEST_HANDLING_OFF = 0,
+    LORAMAC_REQUEST_HANDLING_ON = !LORAMAC_REQUEST_HANDLING_OFF
+}LoRaMacRequestHandling_t;
 
 typedef struct sLoRaMacNvmCtx
 {
@@ -246,16 +274,12 @@ typedef struct sLoRaMacCtx
     */
     TimerTime_t AggregatedLastTxDoneTime;
     TimerTime_t AggregatedTimeOff;
-    /*!
-    * Set to true, if the last uplink was a join request
-    */
-    bool LastTxIsJoinRequest;
     /*
     * Stores the time at LoRaMac initialization.
     *
     * \remark Used for the BACKOFF_DC computation.
     */
-    TimerTime_t InitializationTime;
+    SysTime_t InitializationTime;
     SysTime_t LastTxSysTime;
     /*
     * LoRaMac internal state
@@ -327,6 +351,10 @@ typedef struct sLoRaMacCtx
     */
     LoRaMacFlags_t MacFlags;
     /*
+    * Data structure inidicating if a request is allowed or not.
+    */
+    LoRaMacRequestHandling_t AllowRequests;
+    /*
     * Non-volatile module context structure
     */
     LoRaMacNvmCtx_t* NvmCtx;
@@ -337,20 +365,12 @@ typedef struct sLoRaMacCtx
  */
 static LoRaMacCtx_t MacCtx;
 
-/*!
- * Export RadioEvents (Test only)
- */
-RadioEvents_t *RadioEventsTest = &MacCtx.RadioEvents;
-
-/*
- * irq event count
- */
-static int32_t LoRaMacEventCnt = 0;
-
 /*
  * Non-volatile module context.
  */
 static LoRaMacNvmCtx_t NvmMacCtx;
+
+
 
 /*
  * List of module contexts.
@@ -412,17 +432,17 @@ static void OnRadioRxTimeout( void );
 /*!
  * \brief Function executed on duty cycle delayed Tx  timer event
  */
-static void OnTxDelayedTimerEvent( void );
+static void OnTxDelayedTimerEvent( void* context );
 
 /*!
  * \brief Function executed on first Rx window timer event
  */
-static void OnRxWindow1TimerEvent( void );
+static void OnRxWindow1TimerEvent( void* context );
 
 /*!
  * \brief Function executed on second Rx window timer event
  */
-static void OnRxWindow2TimerEvent( void );
+static void OnRxWindow2TimerEvent( void* context );
 
 /*!
  * \brief Check if the OnAckTimeoutTimer has do be disabled. If so, the
@@ -437,7 +457,7 @@ static void CheckToDisableAckTimeout( bool nodeAckRequested, DeviceClass_t devCl
 /*!
  * \brief Function executed on AckTimeout timer event
  */
-static void OnAckTimeoutTimerEvent( void );
+static void OnAckTimeoutTimerEvent( void* context );
 
 /*!
  * \brief Initializes and opens the reception window
@@ -496,7 +516,7 @@ static bool ValidatePayloadLength( uint8_t lenN, int8_t datarate, uint8_t fOptsL
  * \param [IN] snr          The SNR value  of the frame
  * \param [IN] rxSlot       The RX slot where the frame was received
  */
-static void ProcessMacCommands( uint8_t* payload, uint8_t macIndex, uint8_t commandsSize, uint8_t snr, LoRaMacRxSlot_t rxSlot );
+static void ProcessMacCommands( uint8_t* payload, uint8_t macIndex, uint8_t commandsSize, int8_t snr, LoRaMacRxSlot_t rxSlot );
 
 /*!
  * \brief LoRaMAC layer generic send frame
@@ -555,6 +575,15 @@ static LoRaMacStatus_t SecureFrame( uint8_t txDr, uint8_t txCh );
  */
 static void CalculateBackOff( uint8_t channel );
 
+/*
+ * \brief Function to remove pending MAC commands
+ *
+ * \param [IN] rxSlot     The RX slot on which the frame was received
+ * \param [IN] fCtrl      The frame control field of the received frame
+ * \param [IN] request    The request type
+ */
+static void RemoveMacCommands( LoRaMacRxSlot_t rxSlot, LoRaMacFrameCtrl_t fCtrl, Mcps_t request );
+
 /*!
  * \brief LoRaMAC layer prepared frame buffer transmission with channel specification
  *
@@ -592,15 +621,6 @@ LoRaMacStatus_t SetTxContinuousWave1( uint16_t timeout, uint32_t frequency, uint
  * \brief Resets MAC specific parameters to default
  */
 static void ResetMacParameters( void );
-
-/*!
- * \brief Checks if the fPort value is allowed
- *
- * \param [IN] fPort     The fPort
- *
- * \retval [false: fPort not allowed, true: fPort allowed]
- */
-static bool IsFPortAllowed( uint8_t fPort );
 
 /*!
  * \brief Opens up a continuous RX 2 window. This is used for
@@ -723,6 +743,60 @@ static void EventConfirmQueueNvmCtxChanged( void );
 static void EventFCntHandlerNvmCtxChanged( void );
 
 /*!
+ * \brief Verifies if a request is pending currently
+ *
+ *\retval 1: Request pending, 0: request not pending
+ */
+static uint8_t IsRequestPending( void );
+
+/*!
+ * \brief Enabled the possibility to perform requests
+ *
+ * \param [IN] requestState Request permission state
+ */
+static void LoRaMacEnableRequests( LoRaMacRequestHandling_t requestState );
+
+/*!
+ * \brief This function verifies if a RX abort occured
+ */
+static void LoRaMacCheckForRxAbort( void );
+
+/*!
+ * \brief This function verifies if a TX timeout occured
+ *
+ *\retval 1: TX timeout, 0: no TX timeout
+ */
+static uint8_t LoRaMacCheckForTxTimeout( void );
+
+/*!
+ * \brief This function verifies if a beacon acquisition MLME
+ *        request was pending
+ *
+ * \retval 1: Request pending, 0: no request pending
+ */
+static uint8_t LoRaMacCheckForBeaconAcquisition( void );
+
+/*!
+ * \brief This function handles join request
+ */
+static void LoRaMacHandleJoinRequest( void );
+
+/*!
+ * \brief This function handles mcps request
+ */
+static void LoRaMacHandleMcpsRequest( void );
+
+/*!
+ * \brief This function handles callback events for requests
+ */
+static void LoRaMacHandleRequestEvents( void );
+
+/*!
+ * \brief This function handles callback events for indications
+ */
+static void LoRaMacHandleIndicationEvents( void );
+
+/*!
  * Structure used to store the radio Tx event data
  */
 struct
@@ -748,9 +822,11 @@ static void OnRadioTxDone( void )
     MacCtx.LastTxSysTime = SysTimeGet( );
 
     LoRaMacRadioEvents.Events.TxDone = 1;
-#if !defined(NO_MAC_PRINTF)
-    PRINTNOW(); PRINTF("PHY txDone,time=%ld\n\r",TxDoneParams.CurTime );
-#endif
+
+    if( ( MacCtx.MacCallbacks != NULL ) && ( MacCtx.MacCallbacks->MacProcessNotify != NULL ) )
+    {
+        MacCtx.MacCallbacks->MacProcessNotify( );
+    }
 }
 
 static void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr )
@@ -761,34 +837,42 @@ static void OnRadioRxDone( uint8_t *payload, uint16_t size, int16_t rssi, int8_t
     RxDoneParams.Rssi = rssi;
     RxDoneParams.Snr = snr;
 
-    MacCtx.MacState &= ~LORAMAC_RX;
-
     LoRaMacRadioEvents.Events.RxDone = 1;
-#if !defined(NO_MAC_PRINTF)
-    PRINTNOW(); PRINTF("PHY rxDone,rxSize=%d,rssi=%d,snr=%d,time=%ld.\n\r",size,rssi,snr,RxDoneParams.LastRxDone);
-#endif
+
+    if( ( MacCtx.MacCallbacks != NULL ) && ( MacCtx.MacCallbacks->MacProcessNotify != NULL ) )
+    {
+        MacCtx.MacCallbacks->MacProcessNotify( );
+    }
 }
 
 static void OnRadioTxTimeout( void )
 {
     LoRaMacRadioEvents.Events.TxTimeout = 1;
-#if !defined(NO_MAC_PRINTF)
-    PRINTNOW(); PRINTF("PHY txTimeOut\n\r" ); 
-#endif
+
+    if( ( MacCtx.MacCallbacks != NULL ) && ( MacCtx.MacCallbacks->MacProcessNotify != NULL ) )
+    {
+        MacCtx.MacCallbacks->MacProcessNotify( );
+    }
 }
 
 static void OnRadioRxError( void )
 {
     LoRaMacRadioEvents.Events.RxError = 1;
-    MacCtx.MacState &= ~LORAMAC_RX;
+
+    if( ( MacCtx.MacCallbacks != NULL ) && ( MacCtx.MacCallbacks->MacProcessNotify != NULL ) )
+    {
+        MacCtx.MacCallbacks->MacProcessNotify( );
+    }
 }
 
 static void OnRadioRxTimeout( void )
 {
     LoRaMacRadioEvents.Events.RxTimeout = 1;
-#if !defined(NO_MAC_PRINTF)
-    PRINTNOW(); PRINTF("PHY rxTimeOut\n\r" );
-#endif
+
+    if( ( MacCtx.MacCallbacks != NULL ) && ( MacCtx.MacCallbacks->MacProcessNotify != NULL ) )
+    {
+        MacCtx.MacCallbacks->MacProcessNotify( );
+    }
 }
 
 static void ProcessRadioTxDone( void )
@@ -809,8 +893,6 @@ static void ProcessRadioTxDone( void )
     // Setup timers
     TimerSetValue( &MacCtx.RxWindowTimer1, MacCtx.RxWindow1Delay );
     TimerStart( &MacCtx.RxWindowTimer1 );
-    MacCtx.MacState |= LORAMAC_RX;
-
     if( MacCtx.NvmCtx->DeviceClass != CLASS_C )
     {
         TimerSetValue( &MacCtx.RxWindowTimer2, MacCtx.RxWindow2Delay );
@@ -822,16 +904,6 @@ static void ProcessRadioTxDone( void )
         phyParam = RegionGetPhyParam( MacCtx.NvmCtx->Region, &getPhy );
         TimerSetValue( &MacCtx.AckTimeoutTimer, MacCtx.RxWindow2Delay + phyParam.Value );
         TimerStart( &MacCtx.AckTimeoutTimer );
-    }
-
-    // Verify if the last uplink was a join request
-    if( ( MacCtx.MacFlags.Bits.MlmeReq == 1 ) && ( MacCtx.MlmeConfirm.MlmeRequest == MLME_JOIN ) )
-    {
-        MacCtx.LastTxIsJoinRequest = true;
-    }
-    else
-    {
-        MacCtx.LastTxIsJoinRequest = false;
     }
 
     // Store last Tx channel
@@ -864,7 +936,7 @@ static void PrepareRxDoneAbort( void )
 
     if( MacCtx.NvmCtx->NodeAckRequested )
     {
-        OnAckTimeoutTimerEvent( );
+        OnAckTimeoutTimerEvent( NULL );
     }
 
     MacCtx.MacFlags.Bits.McpsInd = 1;
@@ -908,6 +980,7 @@ static void ProcessRadioRxDone( void )
     MacCtx.McpsIndication.AckReceived = false;
     MacCtx.McpsIndication.DownLinkCounter = 0;
     MacCtx.McpsIndication.McpsIndication = MCPS_UNCONFIRMED;
+    MacCtx.McpsIndication.DevAddress = 0;
 
     Radio.Sleep( );
     TimerStop( &MacCtx.RxWindowTimer2 );
@@ -925,13 +998,13 @@ static void ProcessRadioRxDone( void )
         if( LoRaMacClassBIsPingExpected( ) == true )
         {
             LoRaMacClassBSetPingSlotState( PINGSLOT_STATE_CALC_PING_OFFSET );
-            LoRaMacClassBPingSlotTimerEvent( );
+            LoRaMacClassBPingSlotTimerEvent( NULL );
              MacCtx.McpsIndication.RxSlot = RX_SLOT_WIN_PING_SLOT;
         }
         else if( LoRaMacClassBIsMulticastExpected( ) == true )
         {
             LoRaMacClassBSetMulticastSlotState( PINGSLOT_STATE_CALC_PING_OFFSET );
-            LoRaMacClassBMulticastSlotTimerEvent( );
+            LoRaMacClassBMulticastSlotTimerEvent( NULL );
             MacCtx.McpsIndication.RxSlot = RX_SLOT_WIN_MULTICAST_SLOT;
         }
     }
@@ -1004,6 +1077,7 @@ static void ProcessRadioRxDone( void )
             break;
         case FRAME_TYPE_DATA_CONFIRMED_DOWN:
             MacCtx.McpsIndication.McpsIndication = MCPS_CONFIRMED;
+            // Intentional fall through
         case FRAME_TYPE_DATA_UNCONFIRMED_DOWN:
             // Check if the received payload size is valid
             getPhy.UplinkDwellTime = MacCtx.NvmCtx->MacParams.DownlinkDwellTime;
@@ -1016,7 +1090,7 @@ static void ProcessRadioRxDone( void )
                 getPhy.Attribute = PHY_MAX_PAYLOAD_REPEATER;
             }
             phyParam = RegionGetPhyParam( MacCtx.NvmCtx->Region, &getPhy );
-            if( MAX( 0, ( int16_t )( ( int16_t ) size - ( int16_t ) LORA_MAC_FRMPAYLOAD_OVERHEAD ) ) > phyParam.Value )
+            if( MAX( 0, ( int16_t )( ( int16_t ) size - ( int16_t ) LORA_MAC_FRMPAYLOAD_OVERHEAD ) ) > ( int16_t )phyParam.Value )
             {
                 MacCtx.McpsIndication.Status = LORAMAC_EVENT_INFO_STATUS_ERROR;
                 PrepareRxDoneAbort( );
@@ -1034,15 +1108,11 @@ static void ProcessRadioRxDone( void )
                 return;
             }
 
+            // Store device address
+            MacCtx.McpsIndication.DevAddress = macMsgData.FHDR.DevAddr;
+
             FType_t fType;
             if( LORAMAC_STATUS_OK != DetermineFrameType( &macMsgData, &fType ) )
-            {
-                MacCtx.McpsIndication.Status = LORAMAC_EVENT_INFO_STATUS_ERROR;
-                PrepareRxDoneAbort( );
-                return;
-            }
-
-            if( IsFPortAllowed( macMsgData.FPort ) == false )
             {
                 MacCtx.McpsIndication.Status = LORAMAC_EVENT_INFO_STATUS_ERROR;
                 PrepareRxDoneAbort( );
@@ -1069,17 +1139,6 @@ static void ProcessRadioRxDone( void )
             getPhy.Attribute = PHY_MAX_FCNT_GAP;
             phyParam = RegionGetPhyParam( MacCtx.NvmCtx->Region, &getPhy );
 
-
-            if (multicast == 1 && LoRaMacMcIsDynamic(addrID))
-            {
-                if (LoRaMacMcCheckFCntDownRange(addrID, macMsgData.FHDR.FCnt) != LORAMAC_MULTICAST_SUCCESS)
-                {
-                    MacCtx.McpsIndication.Status = LORAMAC_EVENT_INFO_STATUS_DOWNLINK_OUT_OF_COUNTER;
-                    MacCtx.McpsIndication.DownLinkCounter = macMsgData.FHDR.FCnt;
-                    PrepareRxDoneAbort( );
-                    return;
-                }
-            }
             // Get downlink frame counter value
             fCntHandlerStatus = LoRaMacGetFCntDown( addrID, fType, &macMsgData, MacCtx.NvmCtx->Version, phyParam.Value, &fCntID, &downLinkCounter );
             if( fCntHandlerStatus != LORAMAC_FCNT_HANDLER_SUCCESS )
@@ -1115,13 +1174,19 @@ static void ProcessRadioRxDone( void )
                 {
                     // We are not the destination of this frame.
                     MacCtx.McpsIndication.Status = LORAMAC_EVENT_INFO_STATUS_ADDRESS_FAIL;
+
+                    // Abort the reception, if we are not in RX_SLOT_WIN_CLASS_C
+                    if( MacCtx.McpsIndication.RxSlot != RX_SLOT_WIN_CLASS_C )
+                    {
+                        PrepareRxDoneAbort( );
+                    }
                 }
                 else
                 {
                     // MIC calculation fail
                     MacCtx.McpsIndication.Status = LORAMAC_EVENT_INFO_STATUS_MIC_FAIL;
+                    PrepareRxDoneAbort( );
                 }
-                PrepareRxDoneAbort( );
                 return;
             }
 
@@ -1170,19 +1235,7 @@ static void ProcessRadioRxDone( void )
                 return;
             }
 
-            // Remove all sticky MAC commands answers since we can assume
-            // that they have been received by the server.
-            if( MacCtx.McpsConfirm.McpsRequest == MCPS_CONFIRMED )
-            {
-                if( macMsgData.FHDR.FCtrl.Bits.Ack == 1 )
-                {  // For confirmed uplinks only if we have received an ACK.
-                    LoRaMacCommandsRemoveStickyAnsCmds( );
-                }
-            }
-            else
-            {
-                LoRaMacCommandsRemoveStickyAnsCmds( );
-            }
+            RemoveMacCommands( MacCtx.McpsIndication.RxSlot, macMsgData.FHDR.FCtrl, MacCtx.McpsConfirm.McpsRequest );
 
             switch( fType )
             {
@@ -1196,7 +1249,6 @@ static void ProcessRadioRxDone( void )
 
                     // Decode MAC commands in FOpts field
                     ProcessMacCommands( macMsgData.FHDR.FOpts, 0, macMsgData.FHDR.FCtrl.Bits.FOptsLen, snr, MacCtx.McpsIndication.RxSlot );
-                    /* is multicast commands */
                     MacCtx.McpsIndication.Port = macMsgData.FPort;
                     MacCtx.McpsIndication.Buffer = macMsgData.FRMPayload;
                     MacCtx.McpsIndication.BufferSize = macMsgData.FRMPayloadSize;
@@ -1274,10 +1326,9 @@ static void ProcessRadioRxDone( void )
     // Verify if we need to disable the AckTimeoutTimer
     CheckToDisableAckTimeout( MacCtx.NvmCtx->NodeAckRequested, MacCtx.NvmCtx->DeviceClass, MacCtx.McpsConfirm.AckReceived );
 
-    if( MacCtx.AckTimeoutTimer.IsRunning == false )
+    if( TimerIsStarted( &MacCtx.AckTimeoutTimer ) == false )
     {  // Procedure is completed when the AckTimeoutTimer is not running anymore
         MacCtx.MacFlags.Bits.MacDone = 1;
-
     }
 }
 
@@ -1309,7 +1360,7 @@ static void HandleRadioRxErrorTimeout( LoRaMacEventInfoStatus_t rx1EventInfoStat
     if( LoRaMacClassBIsBeaconExpected( ) == true )
     {
         LoRaMacClassBSetBeaconState( BEACON_STATE_TIMEOUT );
-        LoRaMacClassBBeaconTimerEvent( );
+        LoRaMacClassBBeaconTimerEvent( NULL );
         classBRx = true;
     }
     if( MacCtx.NvmCtx->DeviceClass == CLASS_B )
@@ -1317,13 +1368,13 @@ static void HandleRadioRxErrorTimeout( LoRaMacEventInfoStatus_t rx1EventInfoStat
         if( LoRaMacClassBIsPingExpected( ) == true )
         {
             LoRaMacClassBSetPingSlotState( PINGSLOT_STATE_CALC_PING_OFFSET );
-            LoRaMacClassBPingSlotTimerEvent( );
+            LoRaMacClassBPingSlotTimerEvent( NULL );
             classBRx = true;
         }
         if( LoRaMacClassBIsMulticastExpected( ) == true )
         {
             LoRaMacClassBSetMulticastSlotState( PINGSLOT_STATE_CALC_PING_OFFSET );
-            LoRaMacClassBMulticastSlotTimerEvent( );
+            LoRaMacClassBMulticastSlotTimerEvent( NULL );
             classBRx = true;
         }
     }
@@ -1343,19 +1394,12 @@ static void HandleRadioRxErrorTimeout( LoRaMacEventInfoStatus_t rx1EventInfoStat
                 if( TimerGetElapsedTime( MacCtx.AggregatedLastTxDoneTime ) >= MacCtx.RxWindow2Delay )
                 {
                     TimerStop( &MacCtx.RxWindowTimer2 );
-                    MacCtx.MacState &= ~LORAMAC_RX;
                     MacCtx.MacFlags.Bits.MacDone = 1;
                 }
-            }
-            else
-            {
-                MacCtx.MacState &= ~LORAMAC_RX;
-                MacCtx.MacFlags.Bits.MacDone = 1;
             }
         }
         else
         {
-            MacCtx.MacState &= ~LORAMAC_RX;
             if( MacCtx.NvmCtx->NodeAckRequested == true )
             {
                 MacCtx.McpsConfirm.Status = rx2EventInfoStatus;
@@ -1371,7 +1415,6 @@ static void HandleRadioRxErrorTimeout( LoRaMacEventInfoStatus_t rx1EventInfoStat
 
     if( MacCtx.NvmCtx->DeviceClass == CLASS_C )
     {
-        Radio.Standby( );
         OpenContinuousRx2Window( );
     }
 }
@@ -1388,181 +1431,83 @@ static void ProcessRadioRxTimeout( void )
 
 static void LoRaMacHandleIrqEvents( void )
 {
-    LoRaMacRadioEvents_t events = LoRaMacRadioEvents;
+    LoRaMacRadioEvents_t events;
+
+    CRITICAL_SECTION_BEGIN( );
+    events = LoRaMacRadioEvents;
+    LoRaMacRadioEvents.Value = 0;
+    CRITICAL_SECTION_END( );
+
     if( events.Value != 0 )
     {
-	    LoRaMacEventCnt++;
-
-        CRITICAL_SECTION_BEGIN( );
-        LoRaMacRadioEvents.Value = 0;
-        CRITICAL_SECTION_END( );
-
         if( events.Events.TxDone == 1 )
         {
-		    PRINTF("PHY txDone,time=%ld\n\r",TxDoneParams.CurTime );
             ProcessRadioTxDone( );
         }
         if( events.Events.RxDone == 1 )
         {
-			//PRINTF("PHY rxDone\r\n");
             ProcessRadioRxDone( );
         }
         if( events.Events.TxTimeout == 1 )
         {
-		    PRINTF("PHY txTimeOut\n\r" ); 
             ProcessRadioTxTimeout( );
         }
         if( events.Events.RxError == 1 )
         {
-		    PRINTF("PHY rxError\n\r" ); 
             ProcessRadioRxError( );
         }
         if( events.Events.RxTimeout == 1 )
         {
-			PRINTF("PHY rxTimeOut\n\r" );
             ProcessRadioRxTimeout( );
         }
     }
 }
 
-int32_t LoRaMacGetEventCnt(void)
+static LoRaMacBoolean_t LoRaMacIsBusy( void )
 {
-    return LoRaMacEventCnt;
+    if( ( MacCtx.MacState == LORAMAC_IDLE ) &&
+        ( MacCtx.AllowRequests == LORAMAC_REQUEST_HANDLING_ON ) )
+    {
+        return LORAMAC_FALSE;
+    }
+    return LORAMAC_TRUE;
 }
 
-void LoRaMacProcess( void )
+
+static void LoRaMacEnableRequests( LoRaMacRequestHandling_t requestState )
 {
-    bool noTx = false;
+    MacCtx.AllowRequests = requestState;
+}
 
-    LoRaMacHandleIrqEvents( );
-    LoRaMacClassBProcess( );
-
-    // MAC proceeded a state and is ready to check
-    if( MacCtx.MacFlags.Bits.MacDone == 1 )
-    {
-        // A error occurs during receiving
-        if( ( MacCtx.MacState & LORAMAC_RX_ABORT ) == LORAMAC_RX_ABORT )
-        {
-            MacCtx.MacState &= ~LORAMAC_RX_ABORT;
-            MacCtx.MacState &= ~LORAMAC_TX_RUNNING;
-        }
-
-        // An error occurs during transmitting
-        if( ( MacCtx.MacFlags.Bits.MlmeReq == 1 ) || ( ( MacCtx.MacFlags.Bits.McpsReq == 1 ) ) )
-        {
-            // Get a status of any request and check if we have a TX timeout
-            MacCtx.MlmeConfirm.Status = LoRaMacConfirmQueueGetStatusCmn( );
-
-            if( ( MacCtx.McpsConfirm.Status == LORAMAC_EVENT_INFO_STATUS_TX_TIMEOUT ) ||
-                ( MacCtx.MlmeConfirm.Status == LORAMAC_EVENT_INFO_STATUS_TX_TIMEOUT ) )
-            {
-                // Stop transmit cycle due to tx timeout.
-                MacCtx.MacState &= ~LORAMAC_TX_RUNNING;
-                MacCtx.McpsConfirm.NbRetries = MacCtx.NvmCtx->AckTimeoutRetriesCounter;
-                MacCtx.McpsConfirm.AckReceived = false;
-                MacCtx.McpsConfirm.TxTimeOnAir = 0;
-                noTx = true;
-            }
-
-            if( ( LoRaMacConfirmQueueIsCmdActive( MLME_BEACON_ACQUISITION ) == true ) &&
-                ( MacCtx.MacFlags.Bits.McpsReq == 0 ) )
-            {
-                if( MacCtx.MacFlags.Bits.MlmeReq == 1 )
-                {
-                    noTx = true;
-                    MacCtx.MacState &= ~LORAMAC_TX_RUNNING;
-                }
-            }
-        }
-
-        if( noTx == false )
-        {
-            // Handle join request
-            if( ( MacCtx.MacFlags.Bits.MlmeReq == 1 ) && ( LoRaMacConfirmQueueIsCmdActive( MLME_JOIN ) == true ) )
-            {
-                if( LoRaMacConfirmQueueGetStatus( MLME_JOIN ) == LORAMAC_EVENT_INFO_STATUS_OK )
-                {// Node joined successfully
-                    LoRaMacResetFCnts( );
-                    MacCtx.NvmCtx->ChannelsNbTransCounter = 0;
-                }
-                MacCtx.MacState &= ~LORAMAC_TX_RUNNING;
-            }
-
-            // Handle MCPS uplinks
-            if( MacCtx.MacFlags.Bits.McpsReq == 1 )
-            {
-                bool stopRetransmission = false;
-                bool waitForRetransmission = false;
-
-                if( ( MacCtx.McpsConfirm.McpsRequest == MCPS_UNCONFIRMED ) ||
-                    ( MacCtx.McpsConfirm.McpsRequest == MCPS_PROPRIETARY ) )
-                {
-                    stopRetransmission = CheckRetransUnconfirmedUplink( );
-                }
-                else if( MacCtx.McpsConfirm.McpsRequest == MCPS_CONFIRMED )
-                {
-                    if( MacCtx.NvmCtx->AckTimeoutRetry == true )
-                    {
-                        stopRetransmission = CheckRetransConfirmedUplink( );
-
-                        if( MacCtx.NvmCtx->Version.Fields.Minor == 0 )
-                        {
-                            if( stopRetransmission == false )
-                            {
-                                AckTimeoutRetriesProcess( );
-                            }
-                            else
-                            {
-                                AckTimeoutRetriesFinalize( );
-                            }
-                        }
-                    }
-                    else
-                    {
-                        waitForRetransmission = true;
-                    }
-                }
-
-                if( stopRetransmission == true )
-                {// Stop retransmission
-                    StopRetransmission( );
-                }
-                else if( waitForRetransmission == false )
-                {// Arrange further retransmission
-                    MacCtx.MacFlags.Bits.MacDone = 0;
-                    // Reset the state of the AckTimeout
-                    MacCtx.NvmCtx->AckTimeoutRetry = false;
-
-#ifdef TX_RETRY_RANDOM_DELAY
-                    // Sends the same frame again, wait for random time
-                    uint32_t TxRetryTime;
-                    TimerStop( &MacCtx.TxDelayedTimer );
-                    MacCtx.MacState |= LORAMAC_TX_DELAYED;
-                    TxRetryTime = randr( 0, TX_RETRY_DELAY );
-                    TimerSetValue( &MacCtx.TxDelayedTimer, TxRetryTime );
-                    TimerStart( &MacCtx.TxDelayedTimer );
-                    PRINTF("LoRa Send later - prepare timer, TxRetryTime = %d.\r\n", TxRetryTime );
-#else
-                    // Sends the same frame again
-                    OnTxDelayedTimerEvent( );
-#endif
-                }
-            }
-        }
-    }
-
+static void LoRaMacHandleRequestEvents( void )
+{
     // Handle events
+    LoRaMacFlags_t reqEvents = MacCtx.MacFlags;
+
     if( MacCtx.MacState == LORAMAC_IDLE )
     {
+        // Update event bits
         if( MacCtx.MacFlags.Bits.McpsReq == 1 )
         {
             MacCtx.MacFlags.Bits.McpsReq = 0;
-            MacCtx.MacPrimitives->MacMcpsConfirm( &MacCtx.McpsConfirm );
         }
 
         if( MacCtx.MacFlags.Bits.MlmeReq == 1 )
         {
             MacCtx.MacFlags.Bits.MlmeReq = 0;
+        }
+
+        // Allow requests again
+        LoRaMacEnableRequests( LORAMAC_REQUEST_HANDLING_ON );
+
+        // Handle callbacks
+        if( reqEvents.Bits.McpsReq == 1 )
+        {
+            MacCtx.MacPrimitives->MacMcpsConfirm( &MacCtx.McpsConfirm );
+        }
+
+        if( reqEvents.Bits.MlmeReq == 1 )
+        {
             LoRaMacConfirmQueueHandleCb( &MacCtx.MlmeConfirm );
             if( LoRaMacConfirmQueueGetCnt( ) > 0 )
             {
@@ -1570,13 +1515,26 @@ void LoRaMacProcess( void )
             }
         }
 
-        // Handle MLME indication
-        if( MacCtx.MacFlags.Bits.MlmeInd == 1 )
-        {
-            MacCtx.MacPrimitives->MacMlmeIndication( &MacCtx.MlmeIndication );
-            MacCtx.MacFlags.Bits.MlmeInd = 0;
-        }
+        // Start beaconing again
+        LoRaMacClassBResumeBeaconing( );
 
+        // Procedure done. Reset variables.
+        MacCtx.MacFlags.Bits.MacDone = 0;
+    }
+}
+
+static void LoRaMacHandleIndicationEvents( void )
+{
+    // Handle MLME indication
+    if( MacCtx.MacFlags.Bits.MlmeInd == 1 )
+    {
+        MacCtx.MacPrimitives->MacMlmeIndication( &MacCtx.MlmeIndication );
+        MacCtx.MacFlags.Bits.MlmeInd = 0;
+    }
+
+    // Handle events
+    if( MacCtx.MacState == LORAMAC_IDLE )
+    {
         // Verify if sticky MAC commands are pending or not
         bool isStickyMacCommandPending = false;
         LoRaMacCommandsStickyCmdsPending( &isStickyMacCommandPending );
@@ -1584,13 +1542,7 @@ void LoRaMacProcess( void )
         {// Setup MLME indication
             SetMlmeScheduleUplinkIndication( );
             MacCtx.MacPrimitives->MacMlmeIndication( &MacCtx.MlmeIndication );
-            MacCtx.MacFlags.Bits.MlmeInd = 0;
         }
-
-        // Procedure done. Reset variables.
-        MacCtx.MacFlags.Bits.MacDone = 0;
-
-        LoRaMacClassBResumeBeaconing( );
     }
 
     // Handle MCPS indication
@@ -1608,7 +1560,144 @@ void LoRaMacProcess( void )
     }
 }
 
-static void OnTxDelayedTimerEvent( void )
+static void LoRaMacHandleMcpsRequest( void )
+{
+    // Handle MCPS uplinks
+    if( MacCtx.MacFlags.Bits.McpsReq == 1 )
+    {
+        bool stopRetransmission = false;
+        bool waitForRetransmission = false;
+
+        if( ( MacCtx.McpsConfirm.McpsRequest == MCPS_UNCONFIRMED ) ||
+            ( MacCtx.McpsConfirm.McpsRequest == MCPS_PROPRIETARY ) )
+        {
+            stopRetransmission = CheckRetransUnconfirmedUplink( );
+        }
+        else if( MacCtx.McpsConfirm.McpsRequest == MCPS_CONFIRMED )
+        {
+            if( MacCtx.NvmCtx->AckTimeoutRetry == true )
+            {
+                stopRetransmission = CheckRetransConfirmedUplink( );
+
+                if( MacCtx.NvmCtx->Version.Fields.Minor == 0 )
+                {
+                    if( stopRetransmission == false )
+                    {
+                        AckTimeoutRetriesProcess( );
+                    }
+                    else
+                    {
+                        AckTimeoutRetriesFinalize( );
+                    }
+                }
+            }
+            else
+            {
+                waitForRetransmission = true;
+            }
+        }
+
+        if( stopRetransmission == true )
+        {// Stop retransmission
+            StopRetransmission( );
+        }
+        else if( waitForRetransmission == false )
+        {// Arrange further retransmission
+            MacCtx.MacFlags.Bits.MacDone = 0;
+            // Reset the state of the AckTimeout
+            MacCtx.NvmCtx->AckTimeoutRetry = false;
+            // Sends the same frame again
+            OnTxDelayedTimerEvent( NULL );
+        }
+    }
+}
+
+static void LoRaMacHandleJoinRequest( void )
+{
+    // Handle join request
+    if( ( MacCtx.MacFlags.Bits.MlmeReq == 1 ) && ( LoRaMacConfirmQueueIsCmdActive( MLME_JOIN ) == true ) )
+    {
+        if( LoRaMacConfirmQueueGetStatus( MLME_JOIN ) == LORAMAC_EVENT_INFO_STATUS_OK )
+        {// Node joined successfully
+            LoRaMacResetFCnts( );
+            MacCtx.NvmCtx->ChannelsNbTransCounter = 0;
+        }
+        MacCtx.MacState &= ~LORAMAC_TX_RUNNING;
+    }
+}
+
+static uint8_t LoRaMacCheckForTxTimeout( void )
+{
+    if( ( LoRaMacConfirmQueueGetStatusCmn( ) == LORAMAC_EVENT_INFO_STATUS_TX_TIMEOUT ) ||
+        ( MacCtx.McpsConfirm.Status == LORAMAC_EVENT_INFO_STATUS_TX_TIMEOUT ) )
+    {
+        // Stop transmit cycle due to tx timeout
+        MacCtx.MacState &= ~LORAMAC_TX_RUNNING;
+        MacCtx.McpsConfirm.NbRetries = MacCtx.NvmCtx->AckTimeoutRetriesCounter;
+        MacCtx.McpsConfirm.AckReceived = false;
+        MacCtx.McpsConfirm.TxTimeOnAir = 0;
+        return 0x01;
+    }
+    return 0x00;
+}
+
+static uint8_t LoRaMacCheckForBeaconAcquisition( void )
+{
+    if( ( LoRaMacConfirmQueueIsCmdActive( MLME_BEACON_ACQUISITION ) == true ) &&
+        ( MacCtx.MacFlags.Bits.McpsReq == 0 ) )
+    {
+        if( MacCtx.MacFlags.Bits.MlmeReq == 1 )
+        {
+            MacCtx.MacState &= ~LORAMAC_TX_RUNNING;
+            return 0x01;
+        }
+    }
+    return 0x00;
+}
+
+static void LoRaMacCheckForRxAbort( void )
+{
+    // A error occurs during receiving
+    if( ( MacCtx.MacState & LORAMAC_RX_ABORT ) == LORAMAC_RX_ABORT )
+    {
+        MacCtx.MacState &= ~LORAMAC_RX_ABORT;
+        MacCtx.MacState &= ~LORAMAC_TX_RUNNING;
+    }
+}
+
+
+void LoRaMacProcess( void )
+{
+    uint8_t noTx = false;
+
+    LoRaMacHandleIrqEvents( );
+    LoRaMacClassBProcess( );
+
+    // MAC proceeded a state and is ready to check
+    if( MacCtx.MacFlags.Bits.MacDone == 1 )
+    {
+        LoRaMacEnableRequests( LORAMAC_REQUEST_HANDLING_OFF );
+        LoRaMacCheckForRxAbort( );
+
+        // An error occurs during transmitting
+        if( IsRequestPending( ) > 0 )
+        {
+            noTx |= LoRaMacCheckForTxTimeout( );
+            noTx |= LoRaMacCheckForBeaconAcquisition( );
+        }
+
+        if( noTx == 0x00 )
+        {
+            LoRaMacHandleJoinRequest( );
+            LoRaMacHandleMcpsRequest( );
+        }
+        LoRaMacHandleRequestEvents( );
+        LoRaMacEnableRequests( LORAMAC_REQUEST_HANDLING_ON );
+    }
+    LoRaMacHandleIndicationEvents( );
+}
+
+static void OnTxDelayedTimerEvent( void* context )
 {
     TimerStop( &MacCtx.TxDelayedTimer );
     MacCtx.MacState &= ~LORAMAC_TX_DELAYED;
@@ -1634,7 +1723,7 @@ static void OnTxDelayedTimerEvent( void )
     }
 }
 
-static void OnRxWindow1TimerEvent( void )
+static void OnRxWindow1TimerEvent( void* context )
 {
     TimerStop( &MacCtx.RxWindowTimer1 );
     MacCtx.RxSlot = RX_SLOT_WIN_1;
@@ -1655,7 +1744,7 @@ static void OnRxWindow1TimerEvent( void )
     RxWindowSetup( MacCtx.RxWindow1Config.RxContinuous, MacCtx.NvmCtx->MacParams.MaxRxWindow );
 }
 
-static void OnRxWindow2TimerEvent( void )
+static void OnRxWindow2TimerEvent( void* context )
 {
     TimerStop( &MacCtx.RxWindowTimer2 );
 
@@ -1691,7 +1780,7 @@ static void CheckToDisableAckTimeout( bool nodeAckRequested, DeviceClass_t devCl
         {// FIRST CASE
             // We have performed an unconfirmed uplink in class c mode
             // and have received a downlink in RX1 or RX2.
-            OnAckTimeoutTimerEvent( );
+            OnAckTimeoutTimerEvent( NULL );
         }
     }
     else
@@ -1700,19 +1789,18 @@ static void CheckToDisableAckTimeout( bool nodeAckRequested, DeviceClass_t devCl
         {// SECOND CASE
             // We have performed a confirmed uplink and have received a
             // downlink with a valid ACK.
-            OnAckTimeoutTimerEvent( );
+            OnAckTimeoutTimerEvent( NULL );
         }
     }
 }
 
-static void OnAckTimeoutTimerEvent( void )
+static void OnAckTimeoutTimerEvent( void* context )
 {
     TimerStop( &MacCtx.AckTimeoutTimer );
 
     if( MacCtx.NvmCtx->NodeAckRequested == true )
     {
         MacCtx.NvmCtx->AckTimeoutRetry = true;
-        MacCtx.MacFlags.Bits.MacDone = 1;
     }
     if( MacCtx.NvmCtx->DeviceClass == CLASS_C )
     {
@@ -1840,7 +1928,7 @@ static void SetMlmeScheduleUplinkIndication( void )
     MacCtx.MacFlags.Bits.MlmeInd = 1;
 }
 
-static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t commandsSize, uint8_t snr, LoRaMacRxSlot_t rxSlot )
+static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t commandsSize, int8_t snr, LoRaMacRxSlot_t rxSlot )
 {
     uint8_t status = 0;
     bool adrBlockFound = false;
@@ -1859,7 +1947,6 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
                     MacCtx.MlmeConfirm.DemodMargin = payload[macIndex++];
                     MacCtx.MlmeConfirm.NbGateways = payload[macIndex++];
                 }
-                PRINTF("LoRa:received SRV_MAC_LINK_CHECK_ANS,DemodMargin=%d,NbGateways=%d\n\r",MacCtx.MlmeConfirm.DemodMargin, MacCtx.MlmeConfirm.NbGateways);
                 break;
             }
             case SRV_MAC_LINK_ADR_REQ:
@@ -1884,8 +1971,6 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
                     linkAdrReq.CurrentNbRep = MacCtx.NvmCtx->MacParams.ChannelsNbTrans;
                     linkAdrReq.Version = MacCtx.NvmCtx->Version;
 
-                    PRINTF("LoRa:received SRV_MAC_LINK_ADR_REQ.\n\r");
-
                     // Process the ADR requests
                     status = RegionLinkAdrReq( MacCtx.NvmCtx->Region, &linkAdrReq, &linkAdrDatarate,
                                                &linkAdrTxPower, &linkAdrNbRep, &linkAdrNbBytesParsed );
@@ -1909,11 +1994,9 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
             }
             case SRV_MAC_DUTY_CYCLE_REQ:
             {
-                MacCtx.NvmCtx->MaxDCycle = payload[macIndex++];
+                MacCtx.NvmCtx->MaxDCycle = payload[macIndex++] & 0x0F;
                 MacCtx.NvmCtx->AggregatedDCycle = 1 << MacCtx.NvmCtx->MaxDCycle;
                 LoRaMacCommandsAddCmd( MOTE_MAC_DUTY_CYCLE_ANS, macCmdPayload, 0 );
-
-                PRINTF("LoRa:received SRV_MAC_DUTY_CYCLE_REQ,MaxDCycle=%d.\n\r",MacCtx.NvmCtx->MaxDCycle);
                 break;
             }
             case SRV_MAC_RX_PARAM_SETUP_REQ:
@@ -1929,8 +2012,6 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
                 rxParamSetupReq.Frequency |= ( uint32_t ) payload[macIndex++] << 8;
                 rxParamSetupReq.Frequency |= ( uint32_t ) payload[macIndex++] << 16;
                 rxParamSetupReq.Frequency *= 100;
-
-                PRINTF("LoRa:received SRV_MAC_RX_PARAM_SETUP_REQ,DrOffset=%d,Datarate=%d,Frequency=%ld.\n\r",rxParamSetupReq.DrOffset,rxParamSetupReq.Datarate,rxParamSetupReq.Frequency);
 
                 // Perform request on region
                 status = RegionRxParamSetupReq( MacCtx.NvmCtx->Region, &rxParamSetupReq );
@@ -1955,10 +2036,8 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
                     batteryLevel = MacCtx.MacCallbacks->GetBatteryLevel( );
                 }
                 macCmdPayload[0] = batteryLevel;
-                macCmdPayload[1] = snr & 0x3F;
+                macCmdPayload[1] = ( uint8_t )( snr & 0x3F );
                 LoRaMacCommandsAddCmd( MOTE_MAC_DEV_STATUS_ANS, macCmdPayload, 2 );
-
-                PRINTF("LoRa:received SRV_MAC_DEV_STATUS_REQ,Ans'batteryLev=%d,snr=%d.\n\r",batteryLevel,snr);
                 break;
             }
             case SRV_MAC_NEW_CHANNEL_REQ:
@@ -1981,8 +2060,6 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
 
                 macCmdPayload[0] = status;
                 LoRaMacCommandsAddCmd( MOTE_MAC_NEW_CHANNEL_ANS, macCmdPayload, 1 );
-
-                PRINTF("LoRa:received SRV_MAC_NEW_CHANNEL_REQ,ChID=%d,Freq=%ld,DrRange=%d.\n\r",newChannelReq.ChannelId,chParam.Frequency,chParam.DrRange.Value);
                 break;
             }
             case SRV_MAC_RX_TIMING_SETUP_REQ:
@@ -1996,8 +2073,6 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
                 MacCtx.NvmCtx->MacParams.ReceiveDelay1 = delay * 1000;
                 MacCtx.NvmCtx->MacParams.ReceiveDelay2 = MacCtx.NvmCtx->MacParams.ReceiveDelay1 + 1000;
                 LoRaMacCommandsAddCmd( MOTE_MAC_RX_TIMING_SETUP_ANS, macCmdPayload, 0 );
-
-                PRINTF("LoRa:received SRV_MAC_RX_TIMING_SETUP_REQ,Rx1Delay=%d.\n\r",delay);
                 // Setup indication to inform the application
                 SetMlmeScheduleUplinkIndication( );
                 break;
@@ -2005,6 +2080,8 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
             case SRV_MAC_TX_PARAM_SETUP_REQ:
             {
                 TxParamSetupReqParams_t txParamSetupReq;
+                GetPhyParams_t getPhy;
+                PhyParam_t phyParam;
                 uint8_t eirpDwellTime = payload[macIndex++];
 
                 txParamSetupReq.UplinkDwellTime = 0;
@@ -2027,11 +2104,15 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
                     MacCtx.NvmCtx->MacParams.UplinkDwellTime = txParamSetupReq.UplinkDwellTime;
                     MacCtx.NvmCtx->MacParams.DownlinkDwellTime = txParamSetupReq.DownlinkDwellTime;
                     MacCtx.NvmCtx->MacParams.MaxEirp = LoRaMacMaxEirpTable[txParamSetupReq.MaxEirp];
+                    // Update the datarate in case of the new configuration limits it
+                    getPhy.Attribute = PHY_MIN_TX_DR;
+                    getPhy.UplinkDwellTime = MacCtx.NvmCtx->MacParams.UplinkDwellTime;
+                    phyParam = RegionGetPhyParam( MacCtx.NvmCtx->Region, &getPhy );
+                    MacCtx.NvmCtx->MacParams.ChannelsDatarate = MAX( MacCtx.NvmCtx->MacParams.ChannelsDatarate, ( int8_t )phyParam.Value );
+
                     // Add command response
                     LoRaMacCommandsAddCmd( MOTE_MAC_TX_PARAM_SETUP_ANS, macCmdPayload, 0 );
                 }
-
-                PRINTF("LoRa:received SRV_MAC_TX_PARAM_SETUP_REQ.\n\r");
                 break;
             }
             case SRV_MAC_DL_CHANNEL_REQ:
@@ -2044,8 +2125,6 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
                 dlChannelReq.Rx1Frequency |= ( uint32_t ) payload[macIndex++] << 8;
                 dlChannelReq.Rx1Frequency |= ( uint32_t ) payload[macIndex++] << 16;
                 dlChannelReq.Rx1Frequency *= 100;
-
-                PRINTF("LoRa:received SRV_MAC_DL_CHANNEL_REQ,ChID=%d,Rx1Frequency=%ld.\n\r",dlChannelReq.ChannelId,dlChannelReq.Rx1Frequency);
 
                 status = RegionDlChannelReq( MacCtx.NvmCtx->Region, &dlChannelReq );
                 macCmdPayload[0] = status;
@@ -2071,7 +2150,6 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
                 gpsEpochTime.SubSeconds = ( int16_t )( ( ( int32_t )gpsEpochTime.SubSeconds * 1000 ) >> 8 );
 
                 // Copy received GPS Epoch time into system time
-                PRINTF("LoRa:received SRV_MAC_DEVICE_TIME_ANS,gpsEpochTime=%lds%dms.\n\r", gpsEpochTime.Seconds, gpsEpochTime.SubSeconds);
                 sysTime = gpsEpochTime;
                 // Add Unix to Gps epcoh offset. The system time is based on Unix time.
                 sysTime.Seconds += UNIX_GPS_EPOCH_OFFSET;
@@ -2092,8 +2170,6 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
                 if( ( MacCtx.RxSlot != RX_SLOT_WIN_PING_SLOT ) && ( MacCtx.RxSlot != RX_SLOT_WIN_MULTICAST_SLOT ) )
                 {
                     LoRaMacClassBPingSlotInfoAns( );
-
-                    PRINTF("LoRa:received SRV_MAC_PING_SLOT_INFO_ANS.\n\r");
                 }
                 break;
             }
@@ -2109,12 +2185,9 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
                 frequency *= 100;
                 datarate = payload[macIndex++] & 0x0F;
 
-                PRINTF("LoRa:received SRV_MAC_PING_SLOT_CHANNEL_REQ,freq=%ld,dr=%d.\n\r", frequency,datarate);
-
                 status = LoRaMacClassBPingSlotChannelReq( datarate, frequency );
                 macCmdPayload[0] = status;
                 LoRaMacCommandsAddCmd( MOTE_MAC_PING_SLOT_FREQ_ANS, macCmdPayload, 1 );
-                SetMlmeScheduleUplinkIndication( );
                 break;
             }
             case SRV_MAC_BEACON_TIMING_ANS:
@@ -2137,8 +2210,6 @@ static void ProcessMacCommands( uint8_t *payload, uint8_t macIndex, uint8_t comm
                     frequency |= ( uint32_t )payload[macIndex++] << 8;
                     frequency |= ( uint32_t )payload[macIndex++] << 16;
                     frequency *= 100;
-
-                    PRINTF("LoRa:received BEACON_FREQ_REQ,freq=%ld.\n\r", frequency);
 
                     if( LoRaMacClassBBeaconFreqReq( frequency ) == true )
                     {
@@ -2171,11 +2242,6 @@ LoRaMacStatus_t Send( LoRaMacHeader_t* macHdr, uint8_t fPort, void* fBuffer, uin
     if( MacCtx.NvmCtx->NetworkActivation == ACTIVATION_TYPE_NONE )
     {
         return LORAMAC_STATUS_NO_NETWORK_JOINED;
-    }
-    // Check if the device is off
-    if( MacCtx.NvmCtx->MaxDCycle == 255 )
-    {
-        return LORAMAC_STATUS_DEVICE_OFF;
     }
     if( MacCtx.NvmCtx->MaxDCycle == 0 )
     {
@@ -2323,7 +2389,6 @@ static LoRaMacStatus_t ScheduleTx( bool allowDelayedTx )
                 MacCtx.MacState |= LORAMAC_TX_DELAYED;
                 TimerSetValue( &MacCtx.TxDelayedTimer, dutyCycleTimeOff );
                 TimerStart( &MacCtx.TxDelayedTimer );
-                PRINTF("LoRa Send later - prepare timer, dutyCycleTimeOff=%ld.\r\n",dutyCycleTimeOff);
             }
             return LORAMAC_STATUS_OK;
         }
@@ -2350,9 +2415,6 @@ static LoRaMacStatus_t ScheduleTx( bool allowDelayedTx )
     {
         MacCtx.RxWindow1Delay = MacCtx.NvmCtx->MacParams.JoinAcceptDelay1 + MacCtx.RxWindow1Config.WindowOffset;
         MacCtx.RxWindow2Delay = MacCtx.NvmCtx->MacParams.JoinAcceptDelay2 + MacCtx.RxWindow2Config.WindowOffset;
-
-        //MacCtx.RxWindow1Delay += 15;
-        //MacCtx.RxWindow2Delay -= 33;
     }
     else
     {
@@ -2367,13 +2429,8 @@ static LoRaMacStatus_t ScheduleTx( bool allowDelayedTx )
         }
         MacCtx.RxWindow1Delay = MacCtx.NvmCtx->MacParams.ReceiveDelay1 + MacCtx.RxWindow1Config.WindowOffset;
         MacCtx.RxWindow2Delay = MacCtx.NvmCtx->MacParams.ReceiveDelay2 + MacCtx.RxWindow2Config.WindowOffset;
-
-        //MacCtx.RxWindow1Delay += 15;
-        //MacCtx.RxWindow2Delay += 20;
     }
-        
-    PRINTF("RxWindow1Delay=%ld,RxWindow2Delay=%ld.\r\n",MacCtx.RxWindow1Delay,MacCtx.RxWindow2Delay);
-	//PRINTF("ChannelsDatarate=%ld,Channel=%ld.\r\n",MacCtx.NvmCtx->MacParams.ChannelsDatarate,MacCtx.NvmCtx->Channel);
+
     // Secure frame
     LoRaMacStatus_t retval = SecureFrame( MacCtx.NvmCtx->MacParams.ChannelsDatarate, MacCtx.NvmCtx->Channel );
     if( retval != LORAMAC_STATUS_OK )
@@ -2382,22 +2439,7 @@ static LoRaMacStatus_t ScheduleTx( bool allowDelayedTx )
     }
 
     // Try to send now
-    retval = SendFrameOnChannel( MacCtx.NvmCtx->Channel );
-    if( retval != LORAMAC_STATUS_OK )
-    {
-	// Increase the current value by 1
-	uint32_t fCntUp = 0;
-	if( LORAMAC_FCNT_HANDLER_SUCCESS != LoRaMacGetFCntUp( &fCntUp ) )
-	{
-	    return retval;
-	}
-	if( LORAMAC_FCNT_HANDLER_SUCCESS != LoRaMacSetFCntUp( ( fCntUp ) ) )
-	{
-	    return retval;
-	}
-    }
-
-    return retval;
+    return SendFrameOnChannel( MacCtx.NvmCtx->Channel );
 }
 
 static LoRaMacStatus_t SecureFrame( uint8_t txDr, uint8_t txCh )
@@ -2451,9 +2493,13 @@ static void CalculateBackOff( uint8_t channel )
     }
     calcBackOff.DutyCycleEnabled = MacCtx.NvmCtx->DutyCycleOn;
     calcBackOff.Channel = channel;
-    calcBackOff.ElapsedTime = TimerGetElapsedTime( MacCtx.InitializationTime );
+    calcBackOff.ElapsedTime = SysTimeSub( SysTimeGetMcuTime( ), MacCtx.InitializationTime );
     calcBackOff.TxTimeOnAir = MacCtx.TxTimeOnAir;
-    calcBackOff.LastTxIsJoinRequest = MacCtx.LastTxIsJoinRequest;
+    calcBackOff.LastTxIsJoinRequest = false;
+    if( ( MacCtx.MacFlags.Bits.MlmeReq == 1 ) && ( LoRaMacConfirmQueueIsCmdActive( MLME_JOIN ) == true ) )
+    {
+        calcBackOff.LastTxIsJoinRequest = true;
+    }
 
     // Update regional back-off
     RegionCalcBackOff( MacCtx.NvmCtx->Region, &calcBackOff );
@@ -2462,6 +2508,27 @@ static void CalculateBackOff( uint8_t channel )
     // update as we do only calculate the time-off based on the last transmission
     MacCtx.AggregatedTimeOff = ( MacCtx.TxTimeOnAir * MacCtx.NvmCtx->AggregatedDCycle - MacCtx.TxTimeOnAir );
 }
+
+static void RemoveMacCommands( LoRaMacRxSlot_t rxSlot, LoRaMacFrameCtrl_t fCtrl, Mcps_t request )
+{
+    if( rxSlot == RX_SLOT_WIN_1 || rxSlot == RX_SLOT_WIN_2  )
+    {
+        // Remove all sticky MAC commands answers since we can assume
+        // that they have been received by the server.
+        if( request == MCPS_CONFIRMED )
+        {
+            if( fCtrl.Bits.Ack == 1 )
+            {  // For confirmed uplinks only if we have received an ACK.
+                LoRaMacCommandsRemoveStickyAnsCmds( );
+            }
+        }
+        else
+        {
+            LoRaMacCommandsRemoveStickyAnsCmds( );
+        }
+    }
+}
+
 
 static void ResetMacParameters( void )
 {
@@ -2495,7 +2562,7 @@ static void ResetMacParameters( void )
 
     // Reset to application defaults
     InitDefaultsParams_t params;
-    params.Type = INIT_TYPE_APP_DEFAULTS;
+    params.Type = INIT_TYPE_RESTORE_DEFAULT_CHANNELS;
     params.NvmCtx = NULL;
     RegionInitDefaults( MacCtx.NvmCtx->Region, &params );
 
@@ -2504,18 +2571,9 @@ static void ResetMacParameters( void )
     MacCtx.NvmCtx->LastTxChannel = MacCtx.NvmCtx->Channel;
 }
 
-static bool IsFPortAllowed( uint8_t fPort )
-{
-    if( fPort > 224 )
-    {
-        return false;
-    }
-    return true;
-}
-
 static void OpenContinuousRx2Window( void )
 {
-    OnRxWindow2TimerEvent( );
+    OnRxWindow2TimerEvent( NULL );
     MacCtx.RxSlot = RX_SLOT_WIN_CLASS_C;
 }
 
@@ -2540,7 +2598,7 @@ LoRaMacStatus_t PrepareFrame( LoRaMacHeader_t* macHdr, LoRaMacFrameCtrl_t* fCtrl
     {
         case FRAME_TYPE_DATA_CONFIRMED_UP:
             MacCtx.NvmCtx->NodeAckRequested = true;
-            //Intentional fall-through
+            // Intentional fall through
         case FRAME_TYPE_DATA_UNCONFIRMED_UP:
             MacCtx.TxMsg.Type = LORAMAC_MSG_TYPE_DATA;
             MacCtx.TxMsg.Message.Data.Buffer = MacCtx.PktBuffer;
@@ -2563,8 +2621,6 @@ LoRaMacStatus_t PrepareFrame( LoRaMacHeader_t* macHdr, LoRaMacFrameCtrl_t* fCtrl
             MacCtx.McpsConfirm.AckReceived = false;
             MacCtx.McpsConfirm.UpLinkCounter = fCntUp;
 
-            availableSize = GetMaxAppPayloadWithoutFOptsLength( MacCtx.NvmCtx->MacParams.ChannelsDatarate );
-
             // Handle the MAC commands if there are any available
             if( LoRaMacCommandsGetSizeSerializedCmds( &macCmdsSize ) != LORAMAC_COMMANDS_SUCCESS )
             {
@@ -2573,7 +2629,7 @@ LoRaMacStatus_t PrepareFrame( LoRaMacHeader_t* macHdr, LoRaMacFrameCtrl_t* fCtrl
 
             if( macCmdsSize > 0 )
             {
-                //availableSize = GetMaxAppPayloadWithoutFOptsLength( MacCtx.NvmCtx->MacParams.ChannelsDatarate );
+                availableSize = GetMaxAppPayloadWithoutFOptsLength( MacCtx.NvmCtx->MacParams.ChannelsDatarate );
 
                 // There is application payload available and the MAC commands fit into FOpts field.
                 if( ( MacCtx.AppDataSize > 0 ) && ( macCmdsSize <= LORA_MAC_COMMAND_MAX_FOPTS_LENGTH ) )
@@ -2661,7 +2717,6 @@ LoRaMacStatus_t SendFrameOnChannel( uint8_t channel )
     }
     RegionTxConfig( MacCtx.NvmCtx->Region, &txConfig, &txPower, &MacCtx.TxTimeOnAir );
 
-    LoRaMacConfirmQueueSetStatusCmn( LORAMAC_EVENT_INFO_STATUS_ERROR );
     MacCtx.McpsConfirm.Status = LORAMAC_EVENT_INFO_STATUS_ERROR;
     MacCtx.McpsConfirm.Datarate = MacCtx.NvmCtx->MacParams.ChannelsDatarate;
     MacCtx.McpsConfirm.TxPower = txPower;
@@ -2725,7 +2780,7 @@ LoRaMacCtxs_t* GetCtxs( void )
     Contexts.MacNvmCtx = &NvmMacCtx;
     Contexts.MacNvmCtxSize = sizeof( NvmMacCtx );
     Contexts.CryptoNvmCtx = LoRaMacCryptoGetNvmCtx( &Contexts.CryptoNvmCtxSize );
-    GetNvmCtxParams_t params;
+    GetNvmCtxParams_t params ={ 0 };
     Contexts.RegionNvmCtx = RegionGetNvmCtx( MacCtx.NvmCtx->Region, &params );
     Contexts.RegionNvmCtxSize = params.nvmCtxSize;
     Contexts.SecureElementNvmCtx = SecureElementGetNvmCtx( &Contexts.SecureElementNvmCtxSize );
@@ -2994,10 +3049,21 @@ static void EventConfirmQueueNvmCtxChanged( void )
     CallNvmCtxCallback( LORAMAC_NVMCTXMODULE_CONFIRM_QUEUE );
 }
 
-void EventFCntHandlerNvmCtxChanged( void )
+static void EventFCntHandlerNvmCtxChanged( void )
 {
     CallNvmCtxCallback( LORAMAC_NVMCTXMODULE_FCNT_HANDLER );
 }
+
+static uint8_t IsRequestPending( void )
+{
+    if( ( MacCtx.MacFlags.Bits.MlmeReq == 1 ) ||
+        ( MacCtx.MacFlags.Bits.McpsReq == 1 ) )
+    {
+        return 1;
+    }
+    return 0;
+}
+
 
 LoRaMacStatus_t LoRaMacInitialization( LoRaMacPrimitives_t* primitives, LoRaMacCallback_t* callbacks, LoRaMacRegion_t region )
 {
@@ -3006,6 +3072,8 @@ LoRaMacStatus_t LoRaMacInitialization( LoRaMacPrimitives_t* primitives, LoRaMacC
     LoRaMacClassBCallback_t classBCallbacks;
     LoRaMacClassBParams_t classBParams;
 
+	lprint("%s, line = %d\r\n",__FUNCTION__, __LINE__);
+#if 1	
     if( ( primitives == NULL ) ||
         ( callbacks == NULL ) )
     {
@@ -3024,9 +3092,10 @@ LoRaMacStatus_t LoRaMacInitialization( LoRaMacPrimitives_t* primitives, LoRaMacC
     {
         return LORAMAC_STATUS_REGION_NOT_SUPPORTED;
     }
-
+	
     // Confirm queue reset
     LoRaMacConfirmQueueInit( primitives, EventConfirmQueueNvmCtxChanged );
+
 
     // Initialize the module context with zeros
     memset1( ( uint8_t* ) &NvmMacCtx, 0x00, sizeof( LoRaMacNvmCtx_t ) );
@@ -3150,7 +3219,7 @@ LoRaMacStatus_t LoRaMacInitialization( LoRaMacPrimitives_t* primitives, LoRaMacC
     TimerInit( &MacCtx.AckTimeoutTimer, OnAckTimeoutTimerEvent );
 
     // Store the current initialization time
-    MacCtx.InitializationTime = TimerGetCurrentTime( );
+    MacCtx.InitializationTime = SysTimeGetMcuTime( );
 
     // Initialize Radio driver
     MacCtx.RadioEvents.TxDone = OnRadioTxDone;
@@ -3201,9 +3270,11 @@ LoRaMacStatus_t LoRaMacInitialization( LoRaMacPrimitives_t* primitives, LoRaMacC
     // Initialize class b
     // Apply callback
     classBCallbacks.GetTemperatureLevel = NULL;
+    classBCallbacks.MacProcessNotify = NULL;
     if( callbacks != NULL )
     {
         classBCallbacks.GetTemperatureLevel = callbacks->GetTemperatureLevel;
+        classBCallbacks.MacProcessNotify = callbacks->MacProcessNotify;
     }
 
     // Must all be static. Don't use local references.
@@ -3218,6 +3289,8 @@ LoRaMacStatus_t LoRaMacInitialization( LoRaMacPrimitives_t* primitives, LoRaMacC
 
     LoRaMacClassBInit( &classBParams, &classBCallbacks, &EventClassBNvmCtxChanged );
 
+    LoRaMacEnableRequests( LORAMAC_REQUEST_HANDLING_ON );
+#endif
     return LORAMAC_STATUS_OK;
 }
 
@@ -3229,7 +3302,7 @@ LoRaMacStatus_t LoRaMacStart( void )
 
 LoRaMacStatus_t LoRaMacStop( void )
 {
-    if( MacCtx.MacState == LORAMAC_IDLE )
+    if( LoRaMacIsBusy( ) == LORAMAC_FALSE )
     {
         MacCtx.MacState = LORAMAC_STOPPED;
         return LORAMAC_STATUS_OK;
@@ -3624,21 +3697,6 @@ LoRaMacStatus_t LoRaMacMibSetRequestConfirm( MibRequestConfirm_t* mibSet )
             if( mibSet->Param.AppSKey != NULL )
             {
                 if( LORAMAC_CRYPTO_SUCCESS != LoRaMacCryptoSetKey( APP_S_KEY, mibSet->Param.AppSKey ) )
-                {
-                    return LORAMAC_STATUS_CRYPTO_ERROR;
-                }
-            }
-            else
-            {
-                status = LORAMAC_STATUS_PARAMETER_INVALID;
-            }
-            break;
-        }
-        case MIB_MC_GEN_APP_KEY:
-        {
-            if( mibSet->Param.McGenAppKey != NULL )
-            {
-                if( LORAMAC_CRYPTO_SUCCESS != LoRaMacCryptoSetKey( MC_GEN_APP_KEY, mibSet->Param.McGenAppKey ) )
                 {
                     return LORAMAC_STATUS_CRYPTO_ERROR;
                 }
@@ -4128,7 +4186,6 @@ LoRaMacStatus_t LoRaMacMulticastChannelSet( MulticastChannel_t channel )
         return LORAMAC_STATUS_BUSY;
     }
 
-    MacCtx.NvmCtx->MulticastChannelList[channel.AddrID].AddrID = channel.AddrID;
     MacCtx.NvmCtx->MulticastChannelList[channel.AddrID].Address = channel.Address;
     MacCtx.NvmCtx->MulticastChannelList[channel.AddrID].IsEnabled = channel.IsEnabled;
     MacCtx.NvmCtx->MulticastChannelList[channel.AddrID].Frequency = channel.Frequency;
@@ -4153,7 +4210,7 @@ LoRaMacStatus_t LoRaMacMlmeRequest( MlmeReq_t* mlmeRequest )
     {
         return LORAMAC_STATUS_PARAMETER_INVALID;
     }
-    if( MacCtx.MacState != LORAMAC_IDLE )
+    if( LoRaMacIsBusy( ) == LORAMAC_TRUE )
     {
         return LORAMAC_STATUS_BUSY;
     }
@@ -4162,9 +4219,16 @@ LoRaMacStatus_t LoRaMacMlmeRequest( MlmeReq_t* mlmeRequest )
         return LORAMAC_STATUS_BUSY;
     }
 
-    memset1( ( uint8_t* ) &MacCtx.MlmeConfirm, 0, sizeof( MacCtx.MlmeConfirm ) );
-
+    if( LoRaMacConfirmQueueGetCnt( ) == 0 )
+    {
+        memset1( ( uint8_t* ) &MacCtx.MlmeConfirm, 0, sizeof( MacCtx.MlmeConfirm ) );
+    }
     MacCtx.MlmeConfirm.Status = LORAMAC_EVENT_INFO_STATUS_ERROR;
+
+    MacCtx.MacFlags.Bits.MlmeReq = 1;
+    queueElement.Request = mlmeRequest->Type;
+    queueElement.Status = LORAMAC_EVENT_INFO_STATUS_ERROR;
+    queueElement.RestrictCommonReadyToHandle = false;
 
     switch( mlmeRequest->Type )
     {
@@ -4185,38 +4249,24 @@ LoRaMacStatus_t LoRaMacMlmeRequest( MlmeReq_t* mlmeRequest )
 
             ResetMacParameters( );
 
-            MacCtx.MacFlags.Bits.MlmeReq = 1;
-            MacCtx.MlmeConfirm.MlmeRequest = mlmeRequest->Type;
-            queueElement.Request = mlmeRequest->Type;
-
             MacCtx.DevEui = mlmeRequest->Req.Join.DevEui;
             MacCtx.JoinEui = mlmeRequest->Req.Join.JoinEui;
 
-            MacCtx.NvmCtx->MacParams.ChannelsDatarate = RegionAlternateDr( MacCtx.NvmCtx->Region, mlmeRequest->Req.Join.Datarate );
+            MacCtx.NvmCtx->MacParams.ChannelsDatarate = RegionAlternateDr( MacCtx.NvmCtx->Region, mlmeRequest->Req.Join.Datarate, ALTERNATE_DR );
 
             queueElement.Status = LORAMAC_EVENT_INFO_STATUS_JOIN_FAIL;
-            queueElement.RestrictCommonReadyToHandle = false;
-            LoRaMacConfirmQueueAdd( &queueElement );
 
             status = SendReJoinReq( JOIN_REQ );
 
             if( status != LORAMAC_STATUS_OK )
             {
                 // Revert back the previous datarate ( mainly used for US915 like regions )
-                MacCtx.NvmCtx->MacParams.ChannelsDatarate = RegionAlternateDr( MacCtx.NvmCtx->Region, mlmeRequest->Req.Join.Datarate );
+                MacCtx.NvmCtx->MacParams.ChannelsDatarate = RegionAlternateDr( MacCtx.NvmCtx->Region, mlmeRequest->Req.Join.Datarate, ALTERNATE_DR_RESTORE );
             }
-            EventRegionNvmCtxChanged( );
             break;
         }
         case MLME_LINK_CHECK:
         {
-            // Apply the request
-            MacCtx.MacFlags.Bits.MlmeReq = 1;
-            queueElement.Request = mlmeRequest->Type;
-            queueElement.Status = LORAMAC_EVENT_INFO_STATUS_ERROR;
-            queueElement.RestrictCommonReadyToHandle = false;
-            LoRaMacConfirmQueueAdd( &queueElement );
-
             // LoRaMac will send this command piggy-pack
             status = LORAMAC_STATUS_OK;
             if( LoRaMacCommandsAddCmd( MOTE_MAC_LINK_CHECK_REQ, macCmdPayload, 0 ) != LORAMAC_COMMANDS_SUCCESS )
@@ -4227,37 +4277,17 @@ LoRaMacStatus_t LoRaMacMlmeRequest( MlmeReq_t* mlmeRequest )
         }
         case MLME_TXCW:
         {
-            // Apply the request
-            MacCtx.MacFlags.Bits.MlmeReq = 1;
-            queueElement.Request = mlmeRequest->Type;
-            queueElement.Status = LORAMAC_EVENT_INFO_STATUS_ERROR;
-            queueElement.RestrictCommonReadyToHandle = false;
-            LoRaMacConfirmQueueAdd( &queueElement );
-
             status = SetTxContinuousWave( mlmeRequest->Req.TxCw.Timeout );
             break;
         }
         case MLME_TXCW_1:
         {
-            // Apply the request
-            MacCtx.MacFlags.Bits.MlmeReq = 1;
-            queueElement.Request = mlmeRequest->Type;
-            queueElement.Status = LORAMAC_EVENT_INFO_STATUS_ERROR;
-            queueElement.RestrictCommonReadyToHandle = false;
-            LoRaMacConfirmQueueAdd( &queueElement );
 
             status = SetTxContinuousWave1( mlmeRequest->Req.TxCw.Timeout, mlmeRequest->Req.TxCw.Frequency, mlmeRequest->Req.TxCw.Power );
             break;
         }
         case MLME_DEVICE_TIME:
         {
-            // Apply the request
-            MacCtx.MacFlags.Bits.MlmeReq = 1;
-            queueElement.Request = mlmeRequest->Type;
-            queueElement.Status = LORAMAC_EVENT_INFO_STATUS_ERROR;
-            queueElement.RestrictCommonReadyToHandle = false;
-            LoRaMacConfirmQueueAdd( &queueElement );
-
             // LoRaMac will send this command piggy-pack
             status = LORAMAC_STATUS_OK;
             if( LoRaMacCommandsAddCmd( MOTE_MAC_DEVICE_TIME_REQ, macCmdPayload, 0 ) != LORAMAC_COMMANDS_SUCCESS )
@@ -4269,13 +4299,6 @@ LoRaMacStatus_t LoRaMacMlmeRequest( MlmeReq_t* mlmeRequest )
         case MLME_PING_SLOT_INFO:
         {
             uint8_t value = mlmeRequest->Req.PingSlotInfo.PingSlot.Value;
-
-            // Apply the request
-            MacCtx.MacFlags.Bits.MlmeReq = 1;
-            queueElement.Request = mlmeRequest->Type;
-            queueElement.Status = LORAMAC_EVENT_INFO_STATUS_ERROR;
-            queueElement.RestrictCommonReadyToHandle = false;
-            LoRaMacConfirmQueueAdd( &queueElement );
 
             // LoRaMac will send this command piggy-pack
             LoRaMacClassBSetPingSlotInfo( mlmeRequest->Req.PingSlotInfo.PingSlot.Fields.Periodicity );
@@ -4289,13 +4312,6 @@ LoRaMacStatus_t LoRaMacMlmeRequest( MlmeReq_t* mlmeRequest )
         }
         case MLME_BEACON_TIMING:
         {
-            // Apply the request
-            MacCtx.MacFlags.Bits.MlmeReq = 1;
-            queueElement.Request = mlmeRequest->Type;
-            queueElement.Status = LORAMAC_EVENT_INFO_STATUS_ERROR;
-            queueElement.RestrictCommonReadyToHandle = false;
-            LoRaMacConfirmQueueAdd( &queueElement );
-
             // LoRaMac will send this command piggy-pack
             status = LORAMAC_STATUS_OK;
             if( LoRaMacCommandsAddCmd( MOTE_MAC_BEACON_TIMING_REQ, macCmdPayload, 0 ) != LORAMAC_COMMANDS_SUCCESS )
@@ -4307,17 +4323,13 @@ LoRaMacStatus_t LoRaMacMlmeRequest( MlmeReq_t* mlmeRequest )
         case MLME_BEACON_ACQUISITION:
         {
             // Apply the request
-            MacCtx.MacFlags.Bits.MlmeReq = 1;
-            queueElement.Request = mlmeRequest->Type;
-            queueElement.Status = LORAMAC_EVENT_INFO_STATUS_ERROR;
             queueElement.RestrictCommonReadyToHandle = true;
-            LoRaMacConfirmQueueAdd( &queueElement );
 
             if( LoRaMacClassBIsAcquisitionInProgress( ) == false )
             {
                 // Start class B algorithm
                 LoRaMacClassBSetBeaconState( BEACON_STATE_ACQUISITION );
-                LoRaMacClassBBeaconTimerEvent( );
+                LoRaMacClassBBeaconTimerEvent( NULL );
 
                 status = LORAMAC_STATUS_OK;
             }
@@ -4333,15 +4345,17 @@ LoRaMacStatus_t LoRaMacMlmeRequest( MlmeReq_t* mlmeRequest )
 
     if( status != LORAMAC_STATUS_OK )
     {
-        MacCtx.NvmCtx->NodeAckRequested = false;
-        LoRaMacConfirmQueueRemoveLast( );
         if( LoRaMacConfirmQueueGetCnt( ) == 0 )
         {
+            MacCtx.NvmCtx->NodeAckRequested = false;
             MacCtx.MacFlags.Bits.MlmeReq = 0;
         }
     }
-
-    EventMacNvmCtxChanged( );
+    else
+    {
+        LoRaMacConfirmQueueAdd( &queueElement );
+        EventMacNvmCtxChanged( );
+    }
     return status;
 }
 
@@ -4362,9 +4376,8 @@ LoRaMacStatus_t LoRaMacMcpsRequest( McpsReq_t* mcpsRequest )
     {
         return LORAMAC_STATUS_PARAMETER_INVALID;
     }
-    if( MacCtx.MacState != LORAMAC_IDLE )
+    if( LoRaMacIsBusy( ) == LORAMAC_TRUE )
     {
-        PRINTF( "LoRa:LoRaMacMcpsRequest(),MacState=%ld.\r\n",MacCtx.MacState);
         return LORAMAC_STATUS_BUSY;
     }
 
@@ -4416,19 +4429,13 @@ LoRaMacStatus_t LoRaMacMcpsRequest( McpsReq_t* mcpsRequest )
             break;
     }
 
-    // Filter fPorts
-    if( IsFPortAllowed( fPort ) == false )
-    {
-        return LORAMAC_STATUS_PARAMETER_INVALID;
-    }
-
     // Get the minimum possible datarate
     getPhy.Attribute = PHY_MIN_TX_DR;
     getPhy.UplinkDwellTime = MacCtx.NvmCtx->MacParams.UplinkDwellTime;
     phyParam = RegionGetPhyParam( MacCtx.NvmCtx->Region, &getPhy );
     // Apply the minimum possible datarate.
     // Some regions have limitations for the minimum datarate.
-    datarate = MAX( datarate, phyParam.Value );
+    datarate = MAX( datarate, ( int8_t )phyParam.Value );
 
     if( readyToSend == true )
     {
@@ -4473,24 +4480,4 @@ void LoRaMacTestSetDutyCycleOn( bool enable )
     {
         MacCtx.NvmCtx->DutyCycleOn = enable;
     }
-}
-
-LoRaMacState_t GetLoRaMacState(void)
-{
-    return MacCtx.MacState;
-}
-
-/*
- * check whether frequecy and datarate is useful
- */
-uint8_t LoRaMacCheckFreqDr( uint32_t frequency, uint8_t datarate )
-{
-    RxParamSetupReqParams_t rxParamSetupReq;
-
-    rxParamSetupReq.Datarate = datarate;
-    rxParamSetupReq.Frequency = frequency;
-
-    rxParamSetupReq.Frequency *= 100;
-
-    return RegionRxParamSetupReq( MacCtx.NvmCtx->Region, &rxParamSetupReq );
 }

@@ -58,9 +58,6 @@
 #include "LoRaMac.h"
 #include "timer.h"
 
-#ifndef ACTIVE_REGION
-#define ACTIVE_REGION LORAMAC_REGION_CN470
-#endif
 /*!
  * Macro to compute bit of a channel index.
  */
@@ -767,11 +764,6 @@ typedef enum eInitType
      */
     INIT_TYPE_RESTORE_DEFAULT_CHANNELS,
     /*!
-     * Initializes the region specific data to the defaults which were set by
-     * the application.
-     */
-    INIT_TYPE_APP_DEFAULTS,
-    /*!
      * Restores internal context from passed pointer.
      */
     INIT_TYPE_RESTORE_CTX
@@ -1165,6 +1157,21 @@ typedef struct sDlChannelReqParams
 }DlChannelReqParams_t;
 
 /*!
+ * Enumeration of alternation type
+ */
+typedef enum eAlternateDrType
+{
+    /*!
+     * Type to use for an alternation
+     */
+    ALTERNATE_DR,
+    /*!
+     * Type to use to restore one alternation
+     */
+    ALTERNATE_DR_RESTORE
+}AlternateDrType_t;
+
+/*!
  * Parameter structure for the function RegionCalcBackOff.
  */
 typedef struct sCalcBackOffParams
@@ -1188,7 +1195,7 @@ typedef struct sCalcBackOffParams
     /*!
      * Elapsed time since the start of the node.
      */
-    TimerTime_t ElapsedTime;
+    SysTime_t ElapsedTime;
     /*!
      * Time-on-air of the last transmission.
      */
@@ -1539,9 +1546,11 @@ uint8_t RegionDlChannelReq( LoRaMacRegion_t region, DlChannelReqParams_t* dlChan
  *
  * \param [IN] currentDr Current datarate.
  *
+ * \param [IN] type Alternation type.
+ *
  * \retval Datarate to apply.
  */
-int8_t RegionAlternateDr( LoRaMacRegion_t region, int8_t currentDr );
+int8_t RegionAlternateDr( LoRaMacRegion_t region, int8_t currentDr, AlternateDrType_t type );
 
 /*!
  * \brief Calculates the back-off time.

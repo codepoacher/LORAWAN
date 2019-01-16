@@ -261,7 +261,14 @@ typedef struct sLoRaMacClassBCallback
      *
      * \retval  Temperature level
      */
-    uint16_t ( *GetTemperatureLevel )( void );
+    float ( *GetTemperatureLevel )( void );
+    /*!
+     *\brief    Will be called each time a Radio IRQ is handled by the MAC
+     *          layer.
+     * 
+     *\warning  Runs in a IRQ context. Should only change variables state.
+     */
+    void ( *MacProcessNotify )( void );
 }LoRaMacClassBCallback_t;
 
 /*!
@@ -307,7 +314,7 @@ typedef struct sLoRaMacClassBParams
  * Signature of callback function to be called by this module when the
  * non-volatile needs to be saved.
  */
-//typedef void ( *EventNvmCtxChanged )( void );
+typedef void ( *EventNvmCtxChanged )( void );
 
 /*!
  * \brief Initialize LoRaWAN Class B
@@ -367,17 +374,17 @@ bool LoRaMacClassBIsAcquisitionInProgress( void );
 /*!
  * \brief State machine of the Class B for beaconing
  */
-void LoRaMacClassBBeaconTimerEvent( void );
+void LoRaMacClassBBeaconTimerEvent( void* context );
 
 /*!
  * \brief State machine of the Class B for ping slots
  */
-void LoRaMacClassBPingSlotTimerEvent( void );
+void LoRaMacClassBPingSlotTimerEvent( void* context );
 
 /*!
  * \brief State machine of the Class B for multicast slots
  */
-void LoRaMacClassBMulticastSlotTimerEvent( void );
+void LoRaMacClassBMulticastSlotTimerEvent( void* context );
 
 /*!
  * \brief Receives and decodes the beacon frame

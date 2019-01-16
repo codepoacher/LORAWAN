@@ -37,7 +37,7 @@ static struct loop_buffer *g_trans_buf = NULL; 				//接收数据环形缓冲区
 static mutex_lock_t g_mutex; 								//接收数据锁
 static void trans_data_recv(void *args); 
 
-#if 0
+#if 1
 /**************************************************************************************
 * FunctionName   : trans_data_check()
 * Description    : 检查是否接收完数据

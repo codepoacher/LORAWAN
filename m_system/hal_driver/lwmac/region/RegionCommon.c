@@ -32,7 +32,6 @@
 #include "radio.h"
 #include "utilities.h"
 #include "RegionCommon.h"
-#include "lora_config.h"
 
 #define BACKOFF_DC_1_HOUR       100
 #define BACKOFF_DC_10_HOURS     1000
@@ -52,15 +51,15 @@ static uint8_t CountChannels( uint16_t mask, uint8_t nbBits )
     return nbActiveBits;
 }
 
-uint16_t RegionCommonGetJoinDc( TimerTime_t elapsedTime )
+uint16_t RegionCommonGetJoinDc( SysTime_t elapsedTime )
 {
     uint16_t dutyCycle = 0;
 
-    if( elapsedTime < 3600000 )
+    if( elapsedTime.Seconds < 3600 )
     {
         dutyCycle = BACKOFF_DC_1_HOUR;
     }
-    else if( elapsedTime < ( 3600000 + 36000000 ) )
+    else if( elapsedTime.Seconds < ( 3600 + 36000 ) )
     {
         dutyCycle = BACKOFF_DC_10_HOURS;
     }
@@ -170,7 +169,7 @@ TimerTime_t RegionCommonUpdateBandTimeOff( bool joined, bool dutyCycle, Band_t* 
     {
         if( joined == false )
         {
-            uint32_t txDoneTime =  MAX( TimerGetElapsedTime( bands[i].LastJoinTxDoneTime ),
+            TimerTime_t txDoneTime =  MAX( TimerGetElapsedTime( bands[i].LastJoinTxDoneTime ),
                                         ( dutyCycle == true ) ? TimerGetElapsedTime( bands[i].LastTxDoneTime ) : 0 );
 
             if( bands[i].TimeOff <= txDoneTime )
@@ -321,7 +320,6 @@ void RegionCommonCalcBackOff( RegionCommonCalcBackOffParams_t* calcBackOffParams
     // Reset time-off to initial value.
     calcBackOffParams->Bands[bandIdx].TimeOff = 0;
 
-    #if LORAWAN_DUTY_CYCLE_RESTRICT_ON //enable or diasble duty restrict
     if( calcBackOffParams->Joined == false )
     {
         // Get the join duty cycle
@@ -354,7 +352,6 @@ void RegionCommonCalcBackOff( RegionCommonCalcBackOffParams_t* calcBackOffParams
             calcBackOffParams->Bands[bandIdx].TimeOff = 0;
         }
     }
-    #endif
 }
 
 

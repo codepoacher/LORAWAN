@@ -21,8 +21,6 @@ Maintainer: Miguel Luis ( Semtech ), Daniel Jaeckle ( STACKFORCE ), Johannes Bru
 #include <string.h>
 #include "utilities.h"
 #include "LoRaMacFCntHandler.h"
-#include "region/Region.h"
-
 
 /*
  * Initial value of the frame counters
@@ -142,7 +140,6 @@ LoRaMacFCntHandlerStatus_t LoRaMacGetFCntDown( AddressIdentifier_t addrID, FType
 {
     uint32_t previousDown = 0;
     int32_t fCntDiff = 0;
-    int32_t is_multicast = 0;
 
     if( ( macMsg == NULL ) || ( fCntID == NULL ) ||
         ( currentDown == NULL ) )
@@ -174,22 +171,18 @@ LoRaMacFCntHandlerStatus_t LoRaMacGetFCntDown( AddressIdentifier_t addrID, FType
             }
             break;
         case MULTICAST_0_ADDR:
-            is_multicast = 1;
             *fCntID = MC_FCNT_DOWN_0;
             previousDown = FCntHandlerNvmCtx.FCntList.McFCntDown0;
             break;
         case MULTICAST_1_ADDR:
-            is_multicast = 1;
             *fCntID = MC_FCNT_DOWN_1;
             previousDown = FCntHandlerNvmCtx.FCntList.McFCntDown1;
             break;
         case MULTICAST_2_ADDR:
-            is_multicast = 1;
             *fCntID = MC_FCNT_DOWN_2;
             previousDown = FCntHandlerNvmCtx.FCntList.McFCntDown3;
             break;
         case MULTICAST_3_ADDR:
-            is_multicast = 1;
             *fCntID = MC_FCNT_DOWN_3;
             previousDown = FCntHandlerNvmCtx.FCntList.McFCntDown3;
             break;
@@ -217,33 +210,12 @@ LoRaMacFCntHandlerStatus_t LoRaMacGetFCntDown( AddressIdentifier_t addrID, FType
             return LORAMAC_FCNT_HANDLER_CHECK_FAIL;
         }
         else
-        {
-            if ( is_multicast )
-            {
-                *currentDown = macMsg->FHDR.FCnt;
-            }
-            else
-            {  // Negative difference, assume a roll-over of one uint16_t
-                GetPhyParams_t getPhy;
-                PhyParam_t phyParam;
-
-                getPhy.Attribute = PHY_MAX_FCNT_GAP;
-                phyParam = RegionGetPhyParam( ACTIVE_REGION, &getPhy );
-
-                if ( fCntDiff + 65536 < phyParam.Value )
-                {
-                    *currentDown = previousDown + fCntDiff + ( 0x10000 + ( previousDown & 0xFFFF0000 ) );
-                }
-                else
-                {
-                    *currentDown = previousDown + fCntDiff;
-                }
-
-            }
+        {  // Negative difference, assume a roll-over of one uint16_t
+            *currentDown = ( previousDown & 0xFFFF0000 ) + 0x10000 + macMsg->FHDR.FCnt;
         }
     }
 
-    #if 0
+
     // For LoRaWAN 1.0.X only, check maxFCntGap
     if( lrWanVersion.Fields.Minor == 0 )
     {
@@ -252,7 +224,7 @@ LoRaMacFCntHandlerStatus_t LoRaMacGetFCntDown( AddressIdentifier_t addrID, FType
             return LORAMAC_FCNT_HANDLER_MAX_GAP_FAIL;
         }
     }
-    #endif
+
     return LORAMAC_FCNT_HANDLER_SUCCESS;
 }
 
@@ -343,27 +315,5 @@ LoRaMacFCntHandlerStatus_t LoRaMacFCntHandlerSetMulticastReference( MulticastCtx
     multicastList[2].DownLinkCounter = &FCntHandlerNvmCtx.FCntList.McFCntDown2;
     multicastList[3].DownLinkCounter = &FCntHandlerNvmCtx.FCntList.McFCntDown3;
 
-    return LORAMAC_FCNT_HANDLER_SUCCESS;
-}
-
-LoRaMacFCntHandlerStatus_t LoRaMacResetMulticastFCnts( AddressIdentifier_t addrID )
-{
-    switch (addrID) {
-        case MULTICAST_0_ADDR:
-            FCntHandlerNvmCtx.FCntList.McFCntDown0 =  FCNT_DOWN_INITAL_VALUE;
-            break;
-        case MULTICAST_1_ADDR:
-            FCntHandlerNvmCtx.FCntList.McFCntDown1 =  FCNT_DOWN_INITAL_VALUE;
-            break;
-        case MULTICAST_2_ADDR:
-            FCntHandlerNvmCtx.FCntList.McFCntDown2 =  FCNT_DOWN_INITAL_VALUE;
-            break;
-        case MULTICAST_3_ADDR:
-            FCntHandlerNvmCtx.FCntList.McFCntDown3 =  FCNT_DOWN_INITAL_VALUE;
-            break;
-        default:
-            return LORAMAC_FCNT_HANDLER_ERROR;
-    }
- 
     return LORAMAC_FCNT_HANDLER_SUCCESS;
 }

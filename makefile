@@ -51,32 +51,29 @@ endif
 
 MAP_FILE=stm32l083retx.map
 
-C_DEFS = -DUSE_HAL_DRIVER -DSTM32L083xx -DREGION_CN470 -DNO_MAC_PRINTF -DLORAMAC_CLASSB_ENABLED
+C_DEFS = -DUSE_HAL_DRIVER -DSTM32L083xx -DREGION_CN470
 
 MCU = $(CPU) -mthumb -mthumb-interwork $(FPU) $(FLOAT-ABI)
 
-#$(info $(HEAD_CMD))
 INC_FLAGS = $(shell $(HEAD_CMD))	
 
-export CFLAGS := -g $(MCU) -Os  -fsigned-char -ffunction-sections -fdata-sections  $(C_DEFS) -DARM_MATH_CM0PLUS \
+export CFLAGS = -g $(MCU) -Os  -fsigned-char -ffunction-sections -fdata-sections  $(C_DEFS) -DARM_MATH_CM0PLUS \
 	-ffunction-sections -fdata-sections $(INC_FLAGS) -MMD -MP -MF"$(@:%.o=%.cdep)" -MT"$(@)"
 
-export CPPFLAGS := -g $(CPU) $(FPU) $(FLOAT-ABI) -Os  -fsigned-char -ffunction-sections -fdata-sections $(c_DEFS) \
+export CPPFLAGS = -g $(CPU) $(FPU) $(FLOAT-ABI) -Os  -fsigned-char -ffunction-sections -fdata-sections $(c_DEFS) \
 	-ffunction-sections -fdata-sections $(INC_FLAGS) -fabi-version=0 -MMD -MP -MF"$(@:%.o=%.cdep)" -MT"$(@)"
-
 
 ASFLAGS = -W -Wall
 
 LDFLAGS = $(MCU) -fsigned-char -fmessage-length=0 -ffunction-sections -fdata-sections -T \
 		"$(LINK_FILE)" -Xlinker --gc-sections -Wl,-Map,"$(MAP_FILE)" -lnosys --specs=nano.specs  -specs=rdimon.specs -lc -lm
-LDLIB += -lc -lm
 
 ########################################################################
 #C_SRC = $(shell find ./ -name '*.c' | grep -v erpc | grep -v mcu2mpu_client)
 C_SRC = $(shell $(COMM_SRC_CMD) 2>/dev/null)
 C_SRC += $(shell $(HAL_SRC_CMD) 2>/dev/null)
 C_OBJ = $(C_SRC:%.c=%.o)
-#C_DEP = $(C_SRC:%.c=%.cdep)
+C_DEP = $(C_SRC:%.c=%.cdep)
 
 #CPP_SRC = $(shell find ./ -name '*.cpp' | grep -v erpc | grep -v mcu2mpu_client)
 #CPP_OBJ = $(CPP_SRC:%.cpp=%.o)
@@ -93,27 +90,23 @@ ASM_DEP = $(ASM_SRC:%.S=%.adep)
 #all:$(CPP_DEP)  $(C_DEP) $(ASM_DEP) $(CPP_OBJ) $(C_OBJ) $(ASM_OBJ)
 all:  $(CPP_OBJ) $(C_OBJ) $(ASM_OBJ) 
 
-	@echo -e "\033[31mlinking target $(TARGET).elf\033[0m"
-	@$(CC) $(LDFLAGS) -o "$(TARGET).elf" $(ASM_OBJ) $(C_OBJ) $(CPP_OBJ) $(LDLIB)
+	$(CC) $(LDFLAGS) -o "$(TARGET).elf" $(ASM_OBJ) $(C_OBJ) $(CPP_OBJ)
 
 	$(OBJCOPY) $(TARGET).elf $(TARGET).bin -Obinary
 	$(OBJCOPY) $(TARGET).elf $(TARGET).hex -Oihex
 
 ########################################################################
 $(C_OBJ):%.o:%.c
-	@echo -e "\033[33mBuilding $<\033[0m" 
-	@$(CC) $(CFLAGS) -c $< -o $@ 
+	$(CC) $(CFLAGS) -c $< -o $@ 
 
 ########################################################################
 $(CPP_OBJ):%.o:%.cpp
-	@echo -e "\033[33mBuilding $<\033[0m"
-	@$(CPP) $(CPPFLAGS) -c $< -o $@ 
+	$(CPP) $(CPPFLAGS) -c $< -o $@ 
 
 
 ########################################################################
 $(ASM_OBJ):%.o:%.S
-	@echo -e "\033[33mBuilding $<\033[0m"
-	@$(AS) -c $< -o $@ $(ASFLAGS)
+	$(AS) -c $< -o $@ $(ASFLAGS)
 
 ########################################################################
 clean:

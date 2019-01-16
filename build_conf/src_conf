@@ -12,7 +12,6 @@ framework/library
 m_user/uart
 m_user/cmdline
 m_user/lwrun
-m_user/lwlinkwan
 m_user/lwtx-cw
 m_user/lwrx-sensi
 m_user/lwping-pong

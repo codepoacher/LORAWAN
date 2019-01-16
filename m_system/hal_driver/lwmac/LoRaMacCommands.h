@@ -45,14 +45,10 @@
  */
 #define LORAMAC_COMMADS_MAX_NUM_OF_PARAMS   2
 
-#define LORAMAC_MC_COMMADS_MAX_NUM_OF_PARAMS 21
-
 /*!
  * LoRaWAN MAC Command element
  */
 typedef struct sMacCommand MacCommand_t;
-
-typedef struct sMacMcCommand MacMcCommand_t;
 
 struct sMacCommand
 {
@@ -76,26 +72,6 @@ struct sMacCommand
      * Indicates if it's a sticky MAC command
      */
     bool IsSticky;
-};
-
-struct sMacMcCommand
-{
-    /*!
-     *  The pointer to the next MAC Command element in the list
-     */
-    MacMcCommand_t* Next;
-    /*!
-     * MAC command identifier
-     */
-    uint8_t CID;
-    /*!
-     * MAC command payload
-     */
-    uint8_t Payload[LORAMAC_MC_COMMADS_MAX_NUM_OF_PARAMS];
-    /*!
-     * Size of MAC command payload
-     */
-    size_t PayloadSize;
 };
 
 /*!
@@ -133,7 +109,7 @@ typedef enum eLoRaMacCommandsStatus
  * Signature of callback function to be called by this module when the
  * non-volatile needs to be saved.
  */
-//typedef void ( *EventNvmCtxChanged )( void );
+typedef void ( *EventNvmCtxChanged )( void );
 
 /*!
  * \brief Initialization of LoRaMac MAC commands module
@@ -237,22 +213,6 @@ LoRaMacCommandStatus_t LoRaMacCommandsSerializeCmds( size_t availableSize, size_
 LoRaMacCommandStatus_t LoRaMacCommandsStickyCmdsPending( bool* cmdsPending );
 
 /*! \} addtogroup LORAMAC */
-
-/*!
- *  multicast command functions
- */
-LoRaMacCommandStatus_t LoRaMacCommandsMcInit( EventNvmCtxChanged commandsNvmCtxChanged );
-
-LoRaMacCommandStatus_t LoRaMacCommandsMcAddCmd( uint8_t cid,  uint8_t* payload, size_t payloadSize );
-
-LoRaMacCommandStatus_t LoRaMacCommandsMcRemoveCmds( void );
-
-LoRaMacCommandStatus_t LoRaMacCommandsMcRemoveNoneStickyCmds( void );
-
-LoRaMacCommandStatus_t LoRaMacCommandsMcGetSizeSerializedCmds( size_t* size );
-
-LoRaMacCommandStatus_t LoRaMacCommandsMcSerializeCmds( size_t availableSize, uint8_t* buffer );
-
 
 #endif // __LORAMAC_COMMANDS_H__
 

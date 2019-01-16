@@ -124,16 +124,18 @@ extern Gpio_t Led2;
 /*!
  * \brief Function executed on Led 1 Timeout event
  */
-void OnLed1TimerEvent( void )
+void OnLed1TimerEvent( void* context )
 {
+	//debug("%s, line = %d\r\n",__FUNCTION__, __LINE__);
     Led1TimerEvent = true;
 }
 
 /*!
  * \brief Function executed on Led 2 Timeout event
  */
-void OnLed2TimerEvent( void )
+void OnLed2TimerEvent( void* context )
 {
+	//debug("%s, line = %d\r\n",__FUNCTION__, __LINE__);
     Led2TimerEvent = true;
 }
 
@@ -188,7 +190,7 @@ static int lorawan_tx( void )
 	if(check_spi() == -1)
 		return -1;
 
-    // Radio initialization
+	// Radio initialization
     RadioEvents.TxTimeout = OnRadioTxTimeout;
     Radio.Init( &RadioEvents );
     Radio.SetChannel( RF_FREQUENCY );
@@ -197,6 +199,7 @@ static int lorawan_tx( void )
 	uint8_t datarate =  10;
 	Radio.SetTxConfig( MODEM_LORA, 20, 0, bandwidth, datarate, 1, 8, false, true, 0, 0, false, 3000 );
 
+    //设置最大长度为255字节
 	Radio.SetMaxPayloadLength( MODEM_LORA, 255);
 	Radio.SetModem( MODEM_LORA );
 	//SX1276Write(0x39,0x34);//设置同步字的值
@@ -206,10 +209,11 @@ static int lorawan_tx( void )
     // Blink LEDs just to show some activity
     while( 1 )
     {
-        // Process Radio IRQ
+		//debug("lora start:%d\r\n", uxTaskGetStackHighWaterMark(NULL));
+		// Process Radio IRQ
         if( Radio.IrqProcess != NULL )
         {
-            Radio.IrqProcess( );
+            //Radio.IrqProcess( );
         }
         if( Led1TimerEvent == true )
         {
@@ -220,6 +224,15 @@ static int lorawan_tx( void )
 			lwrtc_time_print();
             TimerStart( &Led1Timer );
         }
+		/*
+        if( Led2TimerEvent == true )
+        {
+            Led2TimerEvent = false;
+            debug("led2\r\n");
+			lwrtc_time_print();
+			TimerStart( &Led1Timer );
+        }
+		*/
     }
 }
 
@@ -231,5 +244,5 @@ static __const struct task lorawantx = {
 	.main  = lorawan_tx,
 };
 
-TASK_REGISTER(lorawantx);
+//TASK_REGISTER(lorawantx);
 #endif

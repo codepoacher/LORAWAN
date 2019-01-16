@@ -48,13 +48,6 @@
 #define RTC_TEMP_DEV_TURNOVER                           ( 5.0 )
 
 /*!
- * \brief Timer time variable definition
- */
-#ifndef TimerTime_t
-typedef uint32_t TimerTime_t;
-#endif
-
-/*!
  * \brief Initializes the RTC timer
  *
  * \remark The timer is based on the RTC
@@ -196,5 +189,4 @@ void RtcProcess( void );
  */
 TimerTime_t RtcTempCompensation( TimerTime_t period, float temperature );
 
-void lwrtc_time_print();
 #endif // __RTC_BOARD_H__

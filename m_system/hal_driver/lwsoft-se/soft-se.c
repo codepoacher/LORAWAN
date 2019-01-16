@@ -29,7 +29,7 @@ Maintainer: Miguel Luis ( Semtech ), Gregory Cristian ( Semtech ),
 #include "cmac.h"
 #include "radio.h"
 
-#define NUM_OF_KEYS      24
+#define NUM_OF_KEYS      22
 #define KEY_SIZE         16
 
 /*!
@@ -72,7 +72,6 @@ typedef struct sSecureElementNvCtx
 static SecureElementNvCtx_t SeNvmCtx;
 
 static EventNvmCtxChanged SeNvmCtxChanged;
-
 
 /*
  * Local functions
@@ -162,8 +161,6 @@ SecureElementStatus_t SecureElementInit( EventNvmCtxChanged seNvmCtxChanged )
     SeNvmCtx.KeyList[itr++].KeyID = S_NWK_S_INT_KEY;
     SeNvmCtx.KeyList[itr++].KeyID = NWK_S_ENC_KEY;
     SeNvmCtx.KeyList[itr++].KeyID = APP_S_KEY;
-    SeNvmCtx.KeyList[itr++].KeyID = MC_GEN_APP_KEY;
-    SeNvmCtx.KeyList[itr++].KeyID = MC_ROOT_KEY;
     SeNvmCtx.KeyList[itr++].KeyID = MC_KE_KEY;
     SeNvmCtx.KeyList[itr++].KeyID = MC_KEY_0;
     SeNvmCtx.KeyList[itr++].KeyID = MC_APP_S_KEY_0;
@@ -214,19 +211,33 @@ void* SecureElementGetNvmCtx( size_t* seNvmCtxSize )
 
 SecureElementStatus_t SecureElementSetKey( KeyIdentifier_t keyID, uint8_t* key )
 {
-    
     if( key == NULL )
     {
         return SECURE_ELEMENT_ERROR_NPE;
     }
+    SecureElementStatus_t retval = SECURE_ELEMENT_ERROR;
 
     for( uint8_t i = 0; i < NUM_OF_KEYS; i++ )
     {
         if( SeNvmCtx.KeyList[i].KeyID == keyID )
         {
-            memcpy1( SeNvmCtx.KeyList[i].KeyValue, key, KEY_SIZE );
-            SeNvmCtxChanged( );
-            return SECURE_ELEMENT_SUCCESS;
+            if( LORAMAC_CRYPTO_MULITCAST_KEYS < SeNvmCtx.KeyList[i].KeyID )
+            {  // Decrypt the key if its a Mulitcast key
+
+                uint8_t decryptedKey[16] = { 0 };
+
+                retval = SecureElementAesEncrypt( key, 16, MC_KE_KEY, decryptedKey );
+                if( retval != SECURE_ELEMENT_SUCCESS )
+                {
+                    return retval;
+                }
+            }
+            else
+            {
+                memcpy1( SeNvmCtx.KeyList[i].KeyValue, key, KEY_SIZE );
+                SeNvmCtxChanged( );
+                return SECURE_ELEMENT_SUCCESS;
+            }
         }
     }
 
@@ -356,4 +367,3 @@ SecureElementStatus_t SecureElementRandomNumber( uint32_t* randomNum )
     *randomNum = Radio.Random( );
     return SECURE_ELEMENT_SUCCESS;
 }
-

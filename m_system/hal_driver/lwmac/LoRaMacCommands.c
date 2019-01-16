@@ -28,11 +28,6 @@ Maintainer: Miguel Luis ( Semtech ), Daniel Jaeckle ( STACKFORCE ), Johannes Bru
 #define NUM_OF_MAC_COMMANDS 15
 
 /*
- * Number of MAC Command slots for Multicast
- */
-#define NUM_OF_MC_COMMANDS  6
-
-/*
  * Size of the CID field of MAC commands
  */
 #define CID_FIELD_SIZE  1
@@ -58,21 +53,6 @@ typedef struct sMacCommandsList
 } MacCommandsList_t;
 
 /*
- *  Mac Multicast Commands list structure
- */
-typedef struct sMacMcCommandsList
-{
-    /*
-     * First element of MAC command list.
-     */
-    MacMcCommand_t* First;
-    /*
-     * Last element of MAC command list.
-     */
-    MacMcCommand_t* Last;
-} MacMcCommandsList_t;
-
-/*
  * LoRaMac Commands Context structure
  */
 typedef struct sLoRaMacCommandsCtx
@@ -92,36 +72,14 @@ typedef struct sLoRaMacCommandsCtx
 } LoRaMacCommandsCtx_t;
 
 /*
- * LoRaMac Commands for  multicast Context structure
- */
-typedef struct sLoRaMacCommandsMcCtx
-{
-    /*
-     * List of MAC command elements
-     */
-    MacMcCommandsList_t MacMcCommandList;
-    /*
-     * Buffer to store MAC command elements
-     */
-    MacMcCommand_t MacMcCommandSlots[NUM_OF_MC_COMMANDS];
-    /*
-     * Size of all MAC commands serialized as buffer
-     */
-    size_t SerializedMcCmdsSize;
-} LoRaMacCommandsMcCtx_t;
-
-/*
  * Callback function to notify the upper layer about context change
  */
 static EventNvmCtxChanged CommandsNvmCtxChanged;
 
 /*
- *
  * Non-volatile module context.
  */
 static LoRaMacCommandsCtx_t NvmCtx;
-
-static LoRaMacCommandsMcCtx_t NvmMcCtx;
 
 /* Memory management functions */
 
@@ -165,6 +123,7 @@ MacCommand_t* mallocNewMacCommandSlot( )
 
     return &NvmCtx.MacCommandSlots[itr];
 }
+
 
 /*
  * \brief Free memory slot
@@ -316,151 +275,6 @@ static bool linkedListRemove( MacCommandsList_t* list, MacCommand_t* element )
 
     return true;
 }
-
-bool isMcSlotFree( const MacMcCommand_t* slot )
-{
-    uint8_t* mem = (uint8_t*) slot;
-
-    for( uint16_t size = 0; size < sizeof( MacMcCommand_t ); size++ )
-    {
-        if( mem[size] != 0x00 )
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-MacMcCommand_t* mallocNewMcCommandSlot( )
-{
-    uint8_t itr = 0;
-
-    while( isMcSlotFree( ( const MacMcCommand_t* ) &NvmMcCtx.MacMcCommandSlots[itr]) == false )
-    {
-        itr++;
-        if( itr == NUM_OF_MC_COMMANDS )
-        {
-            return 0;
-        }
-    }
-
-    return &NvmMcCtx.MacMcCommandSlots[itr];
-}
-
-bool freeMacMcCommandSlot( MacMcCommand_t* slot )
-{
-    if( slot == 0 )
-    {
-        return false;
-    }
-
-    memset1( (uint8_t*) slot, 0x00, sizeof( MacMcCommand_t ));
-
-    return true;
-}
-
-static bool mcLinkedListInit( MacMcCommandsList_t* list )
-{
-    if( list == 0 )
-    {
-        return false;
-    }
-
-    list->First = 0;
-    list->Last = 0;
-
-    return true;
-}
-
-static bool mcLinkedListAdd( MacMcCommandsList_t* list, MacMcCommand_t* element )
-{
-    if( ( list == 0 ) && ( element == 0 ) )
-    {
-        return false;
-    }
-
-    /* Check if this is the first entry to enter the list. */
-    if( list->First == 0 )
-    {
-        list->First = element;
-    }
-
-    /* Check if the last entry exists and update its next point. */
-    if( list->Last )
-    {
-        list->Last->Next = element;
-    }
-
-    /* Update the next point of this entry. */
-    element->Next = 0;
-
-    /* Update the last entry of the list. */
-    list->Last = element;
-
-    return true;
-}
-
-static MacMcCommand_t* mcLinkedListGetPrevious( MacMcCommandsList_t* list, MacMcCommand_t* element )
-{
-    if( ( list == 0 ) && ( element == 0 ) )
-    {
-        return NULL;
-    }
-
-    MacMcCommand_t* curElement;
-
-    // Start at the head of the list
-    curElement = list->First;
-
-    /*
-     * When current element is the first of the list, there's no previous element so we can return NULL immediately.
-     */
-    if( element != curElement)
-    {
-
-        // Loop through all elements until the end is reached or the next of current is the current element.
-        while(curElement && (curElement->Next != element))
-        {
-            curElement = curElement->Next;
-        }
-    }
-    else
-    {
-        curElement = NULL;
-    }
-
-    return curElement;
-}
-
-static bool mcLinkedListRemove( MacMcCommandsList_t* list, MacMcCommand_t* element )
-{
-    if( ( list == 0 ) && ( element == 0 ) )
-    {
-        return false;
-    }
-
-    MacMcCommand_t* PrevElement = mcLinkedListGetPrevious( list, element );
-
-    if( list->First == element )
-    {
-        list->First = element->Next;
-    }
-
-    if( list->Last == element )
-    {
-        list->Last = PrevElement;
-    }
-
-    if( PrevElement )
-    {
-        PrevElement->Next = element->Next;
-    }
-
-    element->Next = 0;
-
-    return true;
-}
-
 
 /*
  * \brief Determines if a MAC command is sticky or not
@@ -635,19 +449,35 @@ LoRaMacCommandStatus_t LoRaMacCommandsRemoveNoneStickyCmds( void )
         }
     }
 
+    NvmCtxCallback( );
+
     return LORAMAC_COMMANDS_SUCCESS;
 }
 
 LoRaMacCommandStatus_t LoRaMacCommandsRemoveStickyAnsCmds( void )
 {
-    MacCommand_t* macCmd;
+    MacCommand_t* curElement;
+    MacCommand_t* nexElement;
 
-    for( uint8_t i = 0; i < sizeof( CIDsStickyAnsCmds ); i++)
+    // Start at the head of the list
+    curElement = NvmCtx.MacCommandList.First;
+
+    // Loop through all elements
+    while( curElement != NULL )
     {
-        if( LoRaMacCommandsGetCmd( CIDsStickyAnsCmds[i], &macCmd ) == LORAMAC_COMMANDS_SUCCESS )
+        nexElement = curElement->Next;
+        if( curElement->IsSticky == true )
         {
-            LoRaMacCommandsRemoveCmd( macCmd );
+            for( uint8_t i = 0; i < sizeof( CIDsStickyAnsCmds ); i++)
+            {
+                if( curElement->CID == CIDsStickyAnsCmds[i] )
+                {
+                    LoRaMacCommandsRemoveCmd( curElement );
+                    break;
+                }
+            }
         }
+        curElement = nexElement;
     }
 
     NvmCtxCallback( );
@@ -715,141 +545,6 @@ LoRaMacCommandStatus_t LoRaMacCommandsStickyCmdsPending( bool* cmdsPending )
             // Found one sticky MAC command
             *cmdsPending = true;
             return LORAMAC_COMMANDS_SUCCESS;
-        }
-        curElement = curElement->Next;
-    }
-
-    return LORAMAC_COMMANDS_SUCCESS;
-}
-
-LoRaMacCommandStatus_t LoRaMacCommandsMcInit( EventNvmCtxChanged commandsNvmCtxChanged )
-{
-
-    // Initialize with default
-    memset1( (uint8_t*)&NvmMcCtx, 0, sizeof( NvmMcCtx ) );
-
-    mcLinkedListInit( &NvmMcCtx.MacMcCommandList );
-
-    // Assign callback
-    CommandsNvmCtxChanged = commandsNvmCtxChanged;
-
-    return LORAMAC_COMMANDS_SUCCESS;
-}
-
-LoRaMacCommandStatus_t LoRaMacCommandsMcAddCmd( uint8_t cid,  uint8_t* payload, size_t payloadSize )
-{
-    if( payload == 0 )
-    {
-        return LORAMAC_COMMANDS_ERROR_NPE;
-    }
-    MacMcCommand_t* newCmd;
-
-    // Allocate a memory slot
-    newCmd = mallocNewMcCommandSlot( );
-
-    if( newCmd == 0 )
-    {
-        return LORAMAC_COMMANDS_ERROR_MEMORY;
-    }
-
-    // Add it to the list of Mac commands
-    if( mcLinkedListAdd( &NvmMcCtx.MacMcCommandList, newCmd ) == false )
-    {
-        return LORAMAC_COMMANDS_ERROR;
-    }
-
-    // Set Values
-    newCmd->CID = cid;
-    newCmd->PayloadSize = payloadSize;
-    memcpy1( ( uint8_t* ) newCmd->Payload, payload, payloadSize );
-    //newCmd->IsSticky = IsSticky( cid );
-
-    NvmMcCtx.SerializedMcCmdsSize += ( CID_FIELD_SIZE + payloadSize );
-
-    return LORAMAC_COMMANDS_SUCCESS;
-}
-
-LoRaMacCommandStatus_t LoRaMacCommandsMcRemoveCmd( MacMcCommand_t* macCmd )
-{
-    if( macCmd == NULL )
-    {
-        return LORAMAC_COMMANDS_ERROR_NPE;
-    }
-
-    // Remove the Mac command element from MacCommandList
-    if( mcLinkedListRemove( &NvmMcCtx.MacMcCommandList, macCmd ) == false )
-    {
-        return LORAMAC_COMMANDS_ERROR_CMD_NOT_FOUND;
-    }
-
-    NvmMcCtx.SerializedMcCmdsSize -= ( CID_FIELD_SIZE + macCmd->PayloadSize );
-
-    // Free the MacCommand Slot
-    if( freeMacMcCommandSlot( macCmd ) == false )
-    {
-        return LORAMAC_COMMANDS_ERROR;
-    }
-
-    //NvmCtxCallback( );
-
-    return LORAMAC_COMMANDS_SUCCESS;
-}
-
-LoRaMacCommandStatus_t LoRaMacCommandsMcRemoveCmds( void )
-{
-    MacMcCommand_t* curElement;
-    MacMcCommand_t* nexElement;
-
-    // Start at the head of the list
-    curElement = NvmMcCtx.MacMcCommandList.First;
-
-    // Loop through all elements
-    while( curElement )
-    {
-         nexElement = curElement->Next;
-         LoRaMacCommandsMcRemoveCmd( curElement );
-         curElement = nexElement;
-    }
-
-    //NvmCtxCallback( );
-
-    return LORAMAC_COMMANDS_SUCCESS;
-}
-
-LoRaMacCommandStatus_t LoRaMacCommandsMcGetSizeSerializedCmds( size_t* size )
-{
-    if( size == NULL )
-    {
-        return LORAMAC_COMMANDS_ERROR_NPE;
-    }
-    *size = NvmMcCtx.SerializedMcCmdsSize;
-    return LORAMAC_COMMANDS_SUCCESS;
-
-}
-
-LoRaMacCommandStatus_t LoRaMacCommandsMcSerializeCmds( size_t availableSize, uint8_t* buffer )
-{
-    if( buffer == NULL )
-    {
-        return LORAMAC_COMMANDS_ERROR_NPE;
-    }
-    MacMcCommand_t* curElement;
-    curElement = NvmMcCtx.MacMcCommandList.First;
-    uint8_t itr = 0;
-
-    // Loop through all elements
-    while( curElement )
-    {
-        // If the next MAC command still fits into the buffer, add it.
-        if( ( availableSize - itr ) >= ( CID_FIELD_SIZE + curElement->PayloadSize ) )
-        {
-            buffer[itr++] = curElement->CID;
-            memcpy1( &buffer[itr], curElement->Payload, curElement->PayloadSize );
-            itr = itr + curElement->PayloadSize;
-        }
-        else
-        {
-            break;
         }
         curElement = curElement->Next;
     }

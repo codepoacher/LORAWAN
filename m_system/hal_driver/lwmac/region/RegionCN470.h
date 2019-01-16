@@ -42,7 +42,7 @@
 /*!
  * LoRaMac maximum number of channels
  */
-#define CN470_MAX_NB_CHANNELS                        16
+#define CN470_MAX_NB_CHANNELS                        96
 
 /*!
  * Minimal datarate that can be used by the node
@@ -67,7 +67,7 @@
 /*!
  * Default datarate used by the node
  */
-#define CN470_DEFAULT_DATARATE                      DR_4
+#define CN470_DEFAULT_DATARATE                      DR_0
 
 /*!
  * Minimal Rx1 receive datarate offset
@@ -167,7 +167,7 @@
 /*!
  * Second reception window channel frequency definition.
  */
-#define CN470_RX_WND_2_FREQ                         487100000
+#define CN470_RX_WND_2_FREQ                         505300000
 
 /*!
  * Second reception window channel datarate definition.
@@ -180,7 +180,7 @@
 /*!
  * Beacon frequency
  */
-#define CN470_BEACON_CHANNEL_FREQ                   485500000
+#define CN470_BEACON_CHANNEL_FREQ                   508300000
 
 /*!
  * Beacon frequency channel stepwidth
@@ -220,7 +220,7 @@
 /*!
  * Ping slot channel datarate
  */
-#define CN470_PING_SLOT_CHANNEL_DR                  DR_4
+#define CN470_PING_SLOT_CHANNEL_DR                  DR_2
 
 /*!
  * LoRaMac maximum number of bands
@@ -236,12 +236,12 @@
 /*!
  * Defines the first channel for RX window 1 for CN470 band
  */
-#define CN470_FIRST_RX1_CHANNEL                     ( (uint32_t) 483900000 )
+#define CN470_FIRST_RX1_CHANNEL                     ( (uint32_t) 500300000 )
 
 /*!
  * Defines the last channel for RX window 1 for CN470 band
  */
-#define CN470_LAST_RX1_CHANNEL                      ( (uint32_t) 487100000 )
+#define CN470_LAST_RX1_CHANNEL                      ( (uint32_t) 509700000 )
 
 /*!
  * Defines the step width of the channels for RX window 1
@@ -421,7 +421,7 @@ uint8_t RegionCN470DlChannelReq( DlChannelReqParams_t* dlChannelReq );
  *
  * \retval Datarate to apply.
  */
-int8_t RegionCN470AlternateDr( int8_t currentDr );
+int8_t RegionCN470AlternateDr( int8_t currentDr, AlternateDrType_t type );
 
 /*!
  * \brief Calculates the back-off time.

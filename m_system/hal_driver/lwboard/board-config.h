@@ -29,6 +29,8 @@
  * \author    Daniel Jaeckle ( STACKFORCE )
  *
  * \author    Johannes Bruder ( STACKFORCE )
+ *
+ * \author    Marten Lootsma(TWTG) on behalf of Microchip/Atmel (c)2017
  */
 #ifndef __BOARD_CONFIG_H__
 #define __BOARD_CONFIG_H__

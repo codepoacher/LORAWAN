@@ -45,8 +45,6 @@
 #define LORAWAN_TX_PID               51
 #define LORAWAN_RX_PID               52
 #define LORAWAN_PP_PID               53
-#define LINKWAN_PID					 54
-
 struct piddata {
     uint8_t id;                           // id数据类型
     uint32_t len;                         // 数据长度

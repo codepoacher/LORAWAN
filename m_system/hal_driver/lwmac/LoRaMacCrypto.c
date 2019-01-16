@@ -40,7 +40,6 @@
 #include "LoRaMacParser.h"
 #include "LoRaMacSerializer.h"
 #include "LoRaMacCrypto.h"
-#include "utilities.h"
 
 /*
  * Initial value of the frame counters
@@ -388,9 +387,7 @@ static LoRaMacCryptoStatus_t FOptsEncrypt( uint16_t size, uint32_t address, uint
  * \param[OUT] cmac           - Computed cmac
  * \retval                    - Status of the operation
  */
-static LoRaMacCryptoStatus_t LoraMacCryptoComputeCmac( uint8_t* msg, uint16_t len, KeyIdentifier_t keyID, uint32_t* cmac );
-
-static LoRaMacCryptoStatus_t LoraMacCryptoComputeCmac( uint8_t* msg, uint16_t len, KeyIdentifier_t keyID, uint32_t* cmac )
+static LoRaMacCryptoStatus_t ComputeCmac( uint8_t* msg, uint16_t len, KeyIdentifier_t keyID, uint32_t* cmac )
 {
     if( SecureElementComputeAesCmac( msg, len, keyID, cmac ) != SECURE_ELEMENT_SUCCESS )
     {
@@ -1037,11 +1034,7 @@ LoRaMacCryptoStatus_t LoRaMacCryptoPrepareJoinRequest( LoRaMacMessageJoinRequest
     LoRaMacCryptoStatus_t retval = LORAMAC_CRYPTO_ERROR;
 
     // Add device nonce
-#ifdef NONCE_INC
     CryptoCtx.NvmCtx->DevNonce++;
-#else  
-    CryptoCtx.NvmCtx->DevNonce = (uint16_t) rand1( );
-#endif
     CryptoCtx.EventCryptoNvmCtxChanged( );
     macMsg->DevNonce = CryptoCtx.NvmCtx->DevNonce;
 
@@ -1064,7 +1057,7 @@ LoRaMacCryptoStatus_t LoRaMacCryptoPrepareJoinRequest( LoRaMacMessageJoinRequest
     }
 
     // Compute mic
-    retval = LoraMacCryptoComputeCmac( macMsg->Buffer, ( LORAMAC_JOIN_REQ_MSG_SIZE - LORAMAC_MIC_FIELD_SIZE ), micComputationKeyID, &macMsg->MIC );
+    retval = ComputeCmac( macMsg->Buffer, ( LORAMAC_JOIN_REQ_MSG_SIZE - LORAMAC_MIC_FIELD_SIZE ), micComputationKeyID, &macMsg->MIC );
     if( retval != LORAMAC_CRYPTO_SUCCESS )
     {
         return retval;
@@ -1100,7 +1093,7 @@ LoRaMacCryptoStatus_t LoRaMacCryptoPrepareReJoinType1( LoRaMacMessageReJoinType1
 
     // Compute mic
     // cmac = aes128_cmac(JSIntKey, MHDR | RejoinType | JoinEUI| DevEUI | RJcount1)
-    LoRaMacCryptoStatus_t retval = LoraMacCryptoComputeCmac( macMsg->Buffer, ( LORAMAC_RE_JOIN_1_MSG_SIZE - LORAMAC_MIC_FIELD_SIZE ), J_S_INT_KEY, &macMsg->MIC );
+    LoRaMacCryptoStatus_t retval = ComputeCmac( macMsg->Buffer, ( LORAMAC_RE_JOIN_1_MSG_SIZE - LORAMAC_MIC_FIELD_SIZE ), J_S_INT_KEY, &macMsg->MIC );
     if( retval != LORAMAC_CRYPTO_SUCCESS )
     {
         return retval;
@@ -1140,7 +1133,7 @@ LoRaMacCryptoStatus_t LoRaMacCryptoPrepareReJoinType0or2( LoRaMacMessageReJoinTy
 
     // Compute mic
     // cmac = aes128_cmac(SNwkSIntKey, MHDR | Rejoin Type | NetID | DevEUI | RJcount0)
-    LoRaMacCryptoStatus_t retval = LoraMacCryptoComputeCmac( macMsg->Buffer, ( LORAMAC_RE_JOIN_0_2_MSG_SIZE - LORAMAC_MIC_FIELD_SIZE ), S_NWK_S_INT_KEY, &macMsg->MIC );
+    LoRaMacCryptoStatus_t retval = ComputeCmac( macMsg->Buffer, ( LORAMAC_RE_JOIN_0_2_MSG_SIZE - LORAMAC_MIC_FIELD_SIZE ), S_NWK_S_INT_KEY, &macMsg->MIC );
     if( retval != LORAMAC_CRYPTO_SUCCESS )
     {
         return retval;
@@ -1395,13 +1388,13 @@ LoRaMacCryptoStatus_t LoRaMacCryptoSecureMessage( uint32_t fCntUp, uint8_t txDr,
         uint32_t cmacF = 0;
 
         // cmacS  = aes128_cmac(SNwkSIntKey, B1 | msg)
-        retval = ComputeCmacB1( macMsg->Buffer, ( macMsg->BufSize - LORAMAC_MIC_FIELD_SIZE ), S_NWK_S_INT_KEY, macMsg->FHDR.FCtrl.Bits.Ack, txDr, txCh, macMsg->FHDR.DevAddr, CryptoCtx.NvmCtx->FCntUp, &cmacS );
+        retval = ComputeCmacB1( macMsg->Buffer, ( macMsg->BufSize - LORAMAC_MIC_FIELD_SIZE ), S_NWK_S_INT_KEY, macMsg->FHDR.FCtrl.Bits.Ack, txDr, txCh, macMsg->FHDR.DevAddr, macMsg->FHDR.FCnt, &cmacS );
         if( retval != LORAMAC_CRYPTO_SUCCESS )
         {
             return retval;
         }
         //cmacF = aes128_cmac(FNwkSIntKey, B0 | msg)
-        retval = ComputeCmacB0( macMsg->Buffer, ( macMsg->BufSize - LORAMAC_MIC_FIELD_SIZE ), F_NWK_S_INT_KEY, macMsg->FHDR.FCtrl.Bits.Ack, UPLINK, macMsg->FHDR.DevAddr, CryptoCtx.NvmCtx->FCntUp, &cmacF );
+        retval = ComputeCmacB0( macMsg->Buffer, ( macMsg->BufSize - LORAMAC_MIC_FIELD_SIZE ), F_NWK_S_INT_KEY, macMsg->FHDR.FCtrl.Bits.Ack, UPLINK, macMsg->FHDR.DevAddr, macMsg->FHDR.FCnt, &cmacF );
         if( retval != LORAMAC_CRYPTO_SUCCESS )
         {
             return retval;
@@ -1413,7 +1406,7 @@ LoRaMacCryptoStatus_t LoRaMacCryptoSecureMessage( uint32_t fCntUp, uint8_t txDr,
     {
         // MIC = cmacF[0..3]
         // The IsAck parameter is every time false since the ConfFCnt field is not used in legacy mode.
-        retval = ComputeCmacB0( macMsg->Buffer, ( macMsg->BufSize - LORAMAC_MIC_FIELD_SIZE ), NWK_S_ENC_KEY, false, UPLINK, macMsg->FHDR.DevAddr, CryptoCtx.NvmCtx->FCntUp, &macMsg->MIC );
+        retval = ComputeCmacB0( macMsg->Buffer, ( macMsg->BufSize - LORAMAC_MIC_FIELD_SIZE ), NWK_S_ENC_KEY, false, UPLINK, macMsg->FHDR.DevAddr, macMsg->FHDR.FCnt, &macMsg->MIC );
         if( retval != LORAMAC_CRYPTO_SUCCESS )
         {
             return retval;
@@ -1429,7 +1422,6 @@ LoRaMacCryptoStatus_t LoRaMacCryptoSecureMessage( uint32_t fCntUp, uint8_t txDr,
     return LORAMAC_CRYPTO_SUCCESS;
 }
 
-
 LoRaMacCryptoStatus_t LoRaMacCryptoUnsecureMessage( AddressIdentifier_t addrID, uint32_t address, FCntIdentifier_t fCntID, uint32_t fCntDown, LoRaMacMessageData_t* macMsg )
 {
     if( macMsg == 0 )
@@ -1439,7 +1431,7 @@ LoRaMacCryptoStatus_t LoRaMacCryptoUnsecureMessage( AddressIdentifier_t addrID, 
 
     if( CheckFCntDown( fCntID, fCntDown ) == false )
     {
-        //return LORAMAC_CRYPTO_FAIL_FCNT;
+        return LORAMAC_CRYPTO_FAIL_FCNT;
     }
 
     LoRaMacCryptoStatus_t retval = LORAMAC_CRYPTO_ERROR;
@@ -1460,8 +1452,7 @@ LoRaMacCryptoStatus_t LoRaMacCryptoUnsecureMessage( AddressIdentifier_t addrID, 
         return retval;
     }
     FRMPayloadDecryptionKeyID = curItem->AppSkey;
-    micComputationKeyID = curItem->NwkSkey;
-		
+
     // Check if it is our address
     if( address != macMsg->FHDR.DevAddr )
     {
@@ -1510,7 +1501,6 @@ LoRaMacCryptoStatus_t LoRaMacCryptoUnsecureMessage( AddressIdentifier_t addrID, 
     return LORAMAC_CRYPTO_SUCCESS;
 }
 
-#if 0
 LoRaMacCryptoStatus_t LoRaMacCryptoDeriveMcKEKey( KeyIdentifier_t keyID, uint16_t nonce, uint8_t* devEUI )
 {
     if( devEUI == 0 )
@@ -1542,35 +1532,6 @@ LoRaMacCryptoStatus_t LoRaMacCryptoDeriveMcKEKey( KeyIdentifier_t keyID, uint16_
 
     return LORAMAC_CRYPTO_SUCCESS;
 }
-#else
-LoRaMacCryptoStatus_t LoRaMacCryptoDeriveMcKEKey( void )
-{
-    SecureElementStatus_t retval = SECURE_ELEMENT_ERROR;
-    uint8_t compBase[16] = { 0 };
-    uint8_t rootkey[16] = { 0 };
-    uint8_t kekey[16] = { 0 };
-
-    retval = SecureElementAesEncrypt( compBase, 16, MC_GEN_APP_KEY, rootkey );
-    
-    if( retval != SECURE_ELEMENT_SUCCESS )
-    {
-        return retval;
-    }
-    
-    SecureElementSetKey( MC_ROOT_KEY, rootkey );
-
-    retval = SecureElementAesEncrypt( compBase, 16, MC_ROOT_KEY, kekey );
-    
-    if( retval != SECURE_ELEMENT_SUCCESS )
-    {
-        return retval;
-    }
-    SecureElementSetKey( MC_KE_KEY, kekey );
-
-    return LORAMAC_CRYPTO_SUCCESS;
-}
-#endif 
-
 
 LoRaMacCryptoStatus_t LoRaMacCryptoDeriveMcSessionKeyPair( AddressIdentifier_t addrID, uint32_t mcAddr )
 {
@@ -1598,16 +1559,16 @@ LoRaMacCryptoStatus_t LoRaMacCryptoDeriveMcSessionKeyPair( AddressIdentifier_t a
     compBaseAppS[0] = 0x01;
     compBaseNwkS[0] = 0x02;
 
-    compBaseAppS[1] = ( mcAddr >> 24 ) & 0xFF;
-    compBaseAppS[2] = ( mcAddr >> 16 ) & 0xFF;
-    compBaseAppS[3] = ( mcAddr >> 8 ) & 0xFF;
-    compBaseAppS[4] = mcAddr & 0xFF;
-    
-    compBaseNwkS[1] = ( mcAddr >> 24 ) & 0xFF;
-    compBaseNwkS[2] = ( mcAddr >> 16 ) & 0xFF;
-    compBaseNwkS[3] = ( mcAddr >> 8 ) & 0xFF;
-    compBaseNwkS[4] = mcAddr & 0xFF;
-    
+    compBaseAppS[1] = mcAddr & 0xFF;
+    compBaseAppS[2] = ( mcAddr >> 8 ) & 0xFF;
+    compBaseAppS[3] = ( mcAddr >> 16 ) & 0xFF;
+    compBaseAppS[4] = ( mcAddr >> 24 ) & 0xFF;
+
+    compBaseNwkS[1] = mcAddr & 0xFF;
+    compBaseNwkS[2] = ( mcAddr >> 8 ) & 0xFF;
+    compBaseNwkS[3] = ( mcAddr >> 16 ) & 0xFF;
+    compBaseNwkS[4] = ( mcAddr >> 24 ) & 0xFF;
+
     if( SecureElementDeriveAndStoreKey( CryptoCtx.LrWanVersion, compBaseAppS, curItem->RootKey, curItem->AppSkey ) != SECURE_ELEMENT_SUCCESS )
     {
         return LORAMAC_CRYPTO_ERROR_SECURE_ELEMENT_FUNC;

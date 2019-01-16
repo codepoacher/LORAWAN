@@ -26,34 +26,28 @@
 static uint8_t g_cmd_buf[128] = { 0 };			//命令缓冲区
 static uint8_t g_buf_cnt = 0;					//缓冲区当前个数
 #define TIP  "\r\n#"							//命令行提示符
-//int8_t g_cmd_sensor_key = 0;
-//int8_t g_cmd_gps_key = 0;
-//
-//uint8_t g_fakong[7] = "FAKONG";
-//uint8_t g_success[8] = "success";
-//uint8_t g_fail[5] = "fail";
-//uint8_t g_time[13] = "1-2018-11-12";
-//
-//extern fqueue_t g_tap_ctrl_queue;
-//extern uint8_t g_485_gzcs;
-//extern struct lora_conf g_lora_conf;
-//uint8_t g_gzcs_key = 0;
+int8_t g_cmd_sensor_key = 0;
+int8_t g_cmd_gps_key = 0;
+
+uint8_t g_fakong[7] = "FAKONG";
+uint8_t g_success[8] = "success";
+uint8_t g_fail[5] = "fail";
+uint8_t g_time[13] = "1-2018-11-12";
+
+extern fqueue_t g_tap_ctrl_queue;
+extern uint8_t g_485_gzcs;
+extern struct lora_conf g_lora_conf;
+uint8_t g_gzcs_key = 0;
 /**************************************************************************************
 * FunctionName   : cmdline_dispatcher()
 * Description    : 处理命令
 * EntryParameter : data，接收的数据
 * ReturnValue    : None.
 **************************************************************************************/
-char g_lr_buf[5] = {1, 2, 3, 3, 4};
 static void cmdline_dispatcher(uint8_t *data)
 {
 	if (strncmp((const char *)data, "freq:", strlen("freq:")) == 0) {
-		debug("\r\nFrequency(%dHz)\r\n "    , SX1276LoRaGetRFFrequency());
-	}else if(strncmp((const char *)data, "send", strlen("send")) == 0 )
-	{
-		int AppPort = atoi(data + strlen("send") + 1); 
-		debug("\r\nport %d\r\n",AppPort);
-        lorawan_module_send(1, AppPort, g_lr_buf, sizeof(g_lr_buf), NULL);
+		debug("Frequency(%dHz)\r\n "    , SX1276LoRaGetRFFrequency());
 	}
 	/*
 	if (strncmp((const char *)data, "sleep", strlen("sleep")) == 0) {

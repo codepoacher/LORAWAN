@@ -164,20 +164,6 @@ typedef enum eActivationType
     ACTIVATION_TYPE_OTAA = 2,
 }ActivationType_t;
 
-/*!
- * LoRaMac internal states
- */
-typedef enum eLoRaMacState
-{
-    LORAMAC_IDLE          = 0x00000000,
-    LORAMAC_STOPPED       = 0x00000001,
-    LORAMAC_TX_RUNNING    = 0x00000002,
-    LORAMAC_RX            = 0x00000004,
-    LORAMAC_ACK_RETRY     = 0x00000010,
-    LORAMAC_TX_DELAYED    = 0x00000020,
-    LORAMAC_TX_CONFIG     = 0x00000040,
-    LORAMAC_RX_ABORT      = 0x00000080,
-}LoRaMacState_t;
 
 /*!
  * LoRaMAC channels parameters definition
@@ -517,7 +503,7 @@ typedef struct sBeaconInfo
     /*!
      * SNR
      */
-    uint8_t Snr;
+    int8_t Snr;
     /*!
      * Data structure for the gateway specific part. The
      * content of the values may differ for each gateway
@@ -587,10 +573,6 @@ typedef enum eLoRaMacEventInfoStatus
      * The node has lost MAX_FCNT_GAP or more frames.
      */
     LORAMAC_EVENT_INFO_STATUS_DOWNLINK_TOO_MANY_FRAMES_LOSS,
-    /*!
-     * Dynamic mullticast downlink counter is not minMcFCount â‰?McFCount < maxMcFCount 
-     */
-    LORAMAC_EVENT_INFO_STATUS_DOWNLINK_OUT_OF_COUNTER,
     /*!
      * An address error occurred
      */
@@ -923,6 +905,10 @@ typedef struct sMcpsIndication
      * The downlink counter value for the received frame
      */
     uint32_t DownLinkCounter;
+    /*!
+     * The device address of the frame
+     */
+    uint32_t DevAddress;
 }McpsIndication_t;
 
 /*!
@@ -1379,12 +1365,6 @@ typedef enum eMib
      * LoRaWAN Specification V1.1.0, chapter 6.1.1.3
      */
     MIB_APP_S_KEY,
-     /*!
-     * Multicast key generate rootkey
-     *
-     * LoRaWAN - Secure element specification v1
-     */
-    MIB_MC_GEN_APP_KEY,
     /*!
      * Multicast key encryption key
      *
@@ -1595,6 +1575,10 @@ typedef enum eMib
      * The antenna gain is used to calculate the TX power of the node.
      * The formula is:
      * radioTxPower = ( int8_t )floor( maxEirp - antennaGain )
+     * 
+     * \remark The antenna gain value is referenced to the isotropic antenna.
+     *         The value is in dBi.
+     *         MIB_ANTENNA_GAIN[dBi] = measuredAntennaGain[dBd] + 2.15
      */
     MIB_ANTENNA_GAIN,
     /*!
@@ -1602,6 +1586,10 @@ typedef enum eMib
      * The antenna gain is used to calculate the TX power of the node.
      * The formula is:
      * radioTxPower = ( int8_t )floor( maxEirp - antennaGain )
+     * 
+     * \remark The antenna gain value is referenced to the isotropic antenna.
+     *         The value is in dBi.
+     *         MIB_DEFAULT_ANTENNA_GAIN[dBi] = measuredAntennaGain[dBd] + 2.15
      */
     MIB_DEFAULT_ANTENNA_GAIN,
     /*!
@@ -1755,18 +1743,6 @@ typedef union uMibParam
      * Related MIB type: \ref MIB_APP_S_KEY
      */
     uint8_t* AppSKey;
-    /*!
-     * Multicast key generate rootkey
-     *
-     * Related MIB type: \ref MIB_MC_GEN_APP_KEY
-     */
-    uint8_t* McGenAppKey; 
-        /*!
-     * Multicast key generate mckekey
-     *
-     * Related MIB type: \ref MIB_MC_ROOT_KEY
-     */
-    uint8_t* McRootKey ; 
     /*!
      * Multicast key encryption key
      *
@@ -2145,10 +2121,6 @@ typedef enum eLoRaMacStatus
      */
     LORAMAC_STATUS_LENGTH_ERROR,
     /*!
-     * Service not started - the device is switched off
-     */
-    LORAMAC_STATUS_DEVICE_OFF,
-    /*!
      * Service not started - the specified region is not supported
      * or not activated with preprocessor definitions.
      */
@@ -2346,13 +2318,20 @@ typedef struct sLoRaMacCallback
      *
      * \retval  Temperature level
      */
-    uint16_t ( *GetTemperatureLevel )( void );
+    float ( *GetTemperatureLevel )( void );
     /*!
      * \brief   Will be called when an attribute has changed in one of the context.
      *
      * \param   Context that changed
      */
     void ( *NvmContextChange )( LoRaMacNvmCtxModule_t module );
+    /*!
+     *\brief    Will be called each time a Radio IRQ is handled by the MAC
+     *          layer.
+     * 
+     *\warning  Runs in a IRQ context. Should only change variables state.
+     */
+    void ( *MacProcessNotify )( void );
 }LoRaMacCallback_t;
 
 
@@ -2589,7 +2568,6 @@ LoRaMacStatus_t LoRaMacMibSetRequestConfirm( MibRequestConfirm_t* mibSet );
  *          \ref LORAMAC_STATUS_PARAMETER_INVALID,
  *          \ref LORAMAC_STATUS_NO_NETWORK_JOINED,
  *          \ref LORAMAC_STATUS_LENGTH_ERROR,
- *          \ref LORAMAC_STATUS_DEVICE_OFF.
  */
 LoRaMacStatus_t LoRaMacMlmeRequest( MlmeReq_t* mlmeRequest );
 
@@ -2624,13 +2602,8 @@ LoRaMacStatus_t LoRaMacMlmeRequest( MlmeReq_t* mlmeRequest );
  *          \ref LORAMAC_STATUS_PARAMETER_INVALID,
  *          \ref LORAMAC_STATUS_NO_NETWORK_JOINED,
  *          \ref LORAMAC_STATUS_LENGTH_ERROR,
- *          \ref LORAMAC_STATUS_DEVICE_OFF.
  */
 LoRaMacStatus_t LoRaMacMcpsRequest( McpsReq_t* mcpsRequest );
-
-LoRaMacState_t GetLoRaMacState(void);
-int32_t LoRaMacGetEventCnt (void);
-uint8_t LoRaMacCheckFreqDr( uint32_t frequency, uint8_t datarate );
 
 /*!
  * Automatically add the Region.h file at the end of LoRaMac.h file.

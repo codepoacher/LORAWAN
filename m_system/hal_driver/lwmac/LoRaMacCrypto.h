@@ -125,7 +125,7 @@ typedef enum eLoRaMacCryptoStatus
  * crypto module context.
  *
  */
-//typedef void ( *EventNvmCtxChanged )( void );
+typedef void ( *EventNvmCtxChanged )( void );
 
 /*!
  * Initialization of LoRaMac Crypto module
@@ -244,11 +244,8 @@ LoRaMacCryptoStatus_t LoRaMacCryptoUnsecureMessage( AddressIdentifier_t addrID, 
  * \param[IN]     devEUI          - DevEUI Value
  * \retval                        - Status of the operation
  */
- #if 0
 LoRaMacCryptoStatus_t LoRaMacCryptoDeriveMcKEKey( KeyIdentifier_t keyID, uint16_t nonce, uint8_t* devEUI );
-#else
-LoRaMacCryptoStatus_t LoRaMacCryptoDeriveMcKEKey( void );
-#endif
+
 /*!
  * Derives a Multicast group key pair ( McAppSKey, McNwkSKey ) from McKey
  *

@@ -86,7 +86,7 @@
 #define DIVC( X, N )                                ( ( ( X ) + ( N ) -1 ) / ( N ) )
 
 /*!
- * RTC timer context
+ * RTC timer context 
  */
 typedef struct
 {
@@ -123,11 +123,11 @@ static const uint8_t DaysInMonthLeapYear[] = { 31, 29, 31, 30, 31, 30, 31, 31, 3
 /*!
  * \brief RTC Handle
  */
-static RTC_HandleTypeDef RtcHandle =
+static RTC_HandleTypeDef RtcHandle = 
 {
     .Instance = NULL,
-    .Init =
-    {
+    .Init = 
+    { 
         .HourFormat = 0,
         .AsynchPrediv = 0,
         .SynchPrediv = 0,
@@ -167,7 +167,7 @@ void lwrtc_time_print()
 	RTC_TimeTypeDef rtc_time;
 	RTC_DateTypeDef rtc_date;
 
-    // 2.ªÒ»°µ±«∞ ±º‰
+    // 2.Ëé∑ÂèñÂΩìÂâçÊó∂Èó¥
 	memset(&rtc_time, 0, sizeof(rtc_time));
 	memset(&rtc_date, 0, sizeof(rtc_date));
 	HAL_RTC_GetTime(&RtcHandle, &rtc_time, RTC_FORMAT_BIN);
@@ -324,14 +324,14 @@ void RtcDelayMs( uint32_t delay )
 /*!
  * \brief Sets the alarm
  *
- * \note The alarm is set at now (read in this funtion) + timeout
+ * \note The alarm is set at now (read in this function) + timeout
  *
  * \param timeout Duration of the Timer ticks
  */
 void RtcSetAlarm( uint32_t timeout )
 {
     // We don't go in Low Power mode for timeout below MIN_ALARM_DELAY
-    if( ( MIN_ALARM_DELAY + McuWakeUpTimeCal ) < ( ( timeout - RtcGetTimerElapsedTime( ) ) ) )
+    if( ( int64_t )( MIN_ALARM_DELAY + McuWakeUpTimeCal ) < ( int64_t )( timeout - RtcGetTimerElapsedTime( ) ) )
     {
         LpmSetStopMode( LPM_RTC_ID, LPM_ENABLE );
     }
@@ -414,7 +414,7 @@ void RtcStartAlarm( uint32_t timeout )
     }
 
     while( rtcAlarmSeconds >= TM_SECONDS_IN_1MINUTE )
-    {
+    { 
         rtcAlarmSeconds -= TM_SECONDS_IN_1MINUTE;
         rtcAlarmMinutes++;
     }
@@ -431,7 +431,7 @@ void RtcStartAlarm( uint32_t timeout )
         rtcAlarmDays++;
     }
 
-    if( date.Year % 4 == 0 )
+    if( date.Year % 4 == 0 ) 
     {
         if( rtcAlarmDays > DaysInMonthLeapYear[date.Month - 1] )
         {
@@ -441,20 +441,20 @@ void RtcStartAlarm( uint32_t timeout )
     else
     {
         if( rtcAlarmDays > DaysInMonth[date.Month - 1] )
-        {
+        {   
             rtcAlarmDays = rtcAlarmDays % DaysInMonth[date.Month - 1];
         }
     }
 
     /* Set RTC_AlarmStructure with calculated values*/
     RtcAlarm.AlarmTime.SubSeconds     = PREDIV_S - rtcAlarmSubSeconds;
-    RtcAlarm.AlarmSubSecondMask       = ALARM_SUBSECOND_MASK;
+    RtcAlarm.AlarmSubSecondMask       = ALARM_SUBSECOND_MASK; 
     RtcAlarm.AlarmTime.Seconds        = rtcAlarmSeconds;
     RtcAlarm.AlarmTime.Minutes        = rtcAlarmMinutes;
     RtcAlarm.AlarmTime.Hours          = rtcAlarmHours;
     RtcAlarm.AlarmDateWeekDay         = ( uint8_t )rtcAlarmDays;
     RtcAlarm.AlarmTime.TimeFormat     = time.TimeFormat;
-    RtcAlarm.AlarmDateWeekDaySel      = RTC_ALARMDATEWEEKDAYSEL_DATE;
+    RtcAlarm.AlarmDateWeekDaySel      = RTC_ALARMDATEWEEKDAYSEL_DATE; 
     RtcAlarm.AlarmMask                = RTC_ALARMMASK_NONE;
     RtcAlarm.Alarm                    = RTC_ALARM_A;
     RtcAlarm.AlarmTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
@@ -478,7 +478,7 @@ uint32_t RtcGetTimerElapsedTime( void )
 {
   RTC_TimeTypeDef time;
   RTC_DateTypeDef date;
-
+  
   uint32_t calendarValue = ( uint32_t )RtcGetCalendarValue( &date, &time );
 
   return( ( uint32_t )( calendarValue - RtcTimerContext.Time ) );
@@ -549,7 +549,7 @@ static uint64_t RtcGetCalendarValue( RTC_DateTypeDef* date, RTC_TimeTypeDef* tim
     // Convert from days to seconds
     seconds *= SECONDS_IN_1DAY;
 
-    seconds += ( ( uint32_t )time->Seconds +
+    seconds += ( ( uint32_t )time->Seconds + 
                  ( ( uint32_t )time->Minutes * SECONDS_IN_1MINUTE ) +
                  ( ( uint32_t )time->Hours * SECONDS_IN_1HOUR ) ) ;
 
@@ -595,18 +595,12 @@ void RTC_IRQHandler( void )
         if( __HAL_RTC_ALARM_GET_FLAG( hrtc, RTC_FLAG_ALRAF ) != RESET )
         {
             // Clear the AlarmA interrupt pending bit
-            __HAL_RTC_ALARM_CLEAR_FLAG( hrtc, RTC_FLAG_ALRAF );
+            __HAL_RTC_ALARM_CLEAR_FLAG( hrtc, RTC_FLAG_ALRAF ); 
             // AlarmA callback
             HAL_RTC_AlarmAEventCallback( hrtc );
         }
     }
-
-    #ifdef LORA_SLEEP_WAKEUP_ENABLE
-    //wakeup lora task
-    lora_interrupt_semaphore_release(RTC_IRQ);
-    #endif
 }
-
 /*!
  * \brief  Alarm A callback.
  *
@@ -678,7 +672,7 @@ static __const struct driver rtc = {
 };
 
 /**************************************************************************************
-* Description    : ƒ£øÈ≥ı ºªØ
+* Description    : Ê®°ÂùóÂàùÂßãÂåñ
 **************************************************************************************/
 MODULE_INIT(rtc);
 
