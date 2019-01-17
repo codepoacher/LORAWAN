@@ -75,7 +75,7 @@ static app_context_t g_app_ctx;
 
 static rx_cb_t rx_cb(uint8_t *data, int len)
 {
-	printf("recv data from gw\r\n");
+	printf("recv data from gw!!!!!!!\r\n");
 	//lwdump_data(data,len);
 }
 
@@ -94,7 +94,7 @@ static int32_t linkwan_run( void )
     printf( "\r\n**********************************************\r\n" );
 
 	//注册端口号10；
-    lorawan_module_reg_app_rx_cb(10, rx_cb);
+    //lorawan_module_reg_app_rx_cb(10, rx_cb);
     
 	lorawan_module_init(&esl_lora_connection_ops_cb, &g_app_ctx);
 

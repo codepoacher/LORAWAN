@@ -12,6 +12,7 @@
 tags
 *.swn
 *.swm
+*.map
 .*
 /Debug/
 

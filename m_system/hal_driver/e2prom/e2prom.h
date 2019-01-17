@@ -59,5 +59,7 @@ struct update_conf {
 		fdrive_read(DRIVER_E2PROM, &(a), sizeof(struct e2prom_s)); \
 	}while(0)
 
+uint8_t EepromWriteBuffer( uint16_t addr, uint8_t *buffer, uint16_t size );
+uint8_t EepromReadBuffer( uint16_t addr, uint8_t *buffer, uint16_t size );
 #endif
 

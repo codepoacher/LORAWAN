@@ -42,7 +42,7 @@
 /*!
  * LoRaMac maximum number of channels
  */
-#define CN470_MAX_NB_CHANNELS                        16
+#define CN470_MAX_NB_CHANNELS                        64
 
 /*!
  * Minimal datarate that can be used by the node
@@ -220,7 +220,12 @@
 /*!
  * Ping slot channel datarate
  */
-#define CN470_PING_SLOT_CHANNEL_DR                  DR_4
+#define CN470_PING_SLOT_CHANNEL_DR                  DR_2
+
+/*!
+ * Datarate of the repeater channel
+ */
+#define CN470_REPEATER_CHANNEL_DR                   LORA_NODE_REPEATER_CHANNEL_DR
 
 /*!
  * LoRaMac maximum number of bands
@@ -267,6 +272,11 @@ static const uint8_t MaxPayloadOfDatarateCN470[] = { 51, 51, 51, 115, 222, 222 }
  * Maximum payload with respect to the datarate index. Can operate with repeater.
  */
 static const uint8_t MaxPayloadOfDatarateRepeaterCN470[] = { 51, 51, 51, 115, 222, 222 };
+
+/*!
+ * Preamble Lenth 2.1s table definition for SF12~7
+ */
+static const uint16_t PreambleLenthCN470[] = { 60, 124, 253,  509,  1022,  2047 };
 
 /*!
  * \brief The function gets a value of a specific phy attribute.
@@ -489,6 +499,15 @@ uint8_t RegionCN470ApplyDrOffset( uint8_t downlinkDwellTime, int8_t dr, int8_t d
  */
  void RegionCN470RxBeaconSetup( RxBeaconSetup_t* rxBeaconSetup, uint8_t* outDr );
 
+/*!
+ * \brief Sets repeater params
+ */
+ void RegionCN470RepeaterParamSetup( RepeaterChannelParams_t* repeaterParam );
+
+/*!
+ * \brief Sets freq mode
+ */
+void RegionCN470FreqModeSetup( uint8_t FreqMode );
 /*! \} defgroup REGIONCN470 */
 
 #endif // __REGION_CN470_H__

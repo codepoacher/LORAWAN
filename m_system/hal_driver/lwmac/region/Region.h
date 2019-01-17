@@ -749,7 +749,15 @@ typedef enum ePhyAttribute
     /*!
      * The datarate of a ping slot channel.
      */
-    PHY_PING_SLOT_CHANNEL_DR
+    PHY_PING_SLOT_CHANNEL_DR,
+    /*!
+     * The repeater channel param.
+     */
+    PHY_REPEATER_CHANNEL_PARAM,
+    /*!
+     * The receive channel number
+     */
+    PHY_RX_CHANNEL
 }PhyAttribute_t;
 
 /*!
@@ -833,6 +841,11 @@ typedef union uPhyParam
      * Beacon format
      */
     BeaconFormat_t BeaconFormat;
+    /*!
+     * repeater channel param
+     */
+    RepeaterChannelParams_t RepeaterChannelParam;
+
 }PhyParam_t;
 
 /*!
@@ -1055,6 +1068,10 @@ typedef struct sTxConfigParams
      * Frame length to setup.
      */
     uint16_t PktLen;
+    /*!
+     * Set to true, if a repeater is supported.
+     */
+    bool RepeaterSupport;
 }TxConfigParams_t;
 
 /*!
@@ -1621,6 +1638,19 @@ uint8_t RegionApplyDrOffset( LoRaMacRegion_t region, uint8_t downlinkDwellTime, 
  */
 void RegionRxBeaconSetup( LoRaMacRegion_t region, RxBeaconSetup_t* rxBeaconSetup, uint8_t* outDr );
 
+/*!
+ * \brief Sets repeater parameter
+ *
+ * \param [IN] repeaterParam Pointer to the function parameters
+ */
+void RegionRepeaterParamSetup( LoRaMacRegion_t region, RepeaterChannelParams_t* repeaterParam);
+
+/*!
+ * \brief Sets freq mode
+ *
+ * \param [IN] FreqMode Current frequency mode
+ */
+void RegionFreqModeSetup( LoRaMacRegion_t region, uint8_t FreqMode);
 /*! \} defgroup REGION */
 
 #endif // __REGION_H__

@@ -21,7 +21,7 @@
 #include <stdint.h>
 #include "lora_config.h"
 
-typedef void (*handle_send_cb_fp_t)(int success, void* ctx);
+typedef void (*handle_send_cb_fp_t)(int success, void *ctx);
 
 typedef enum e_esl_data_type {
     /*!
@@ -39,10 +39,10 @@ typedef enum e_esl_data_type {
  *          Register them in lorawan_module_init() if you care.
  */
 typedef struct _esl_connection_ops_cb {
-    int (*on_connect)(int success, void* ctx); //LoRa classA:join result;LoRa classB:join and switch result;
-    int (*on_disconnect)(void* ctx);
-    int (*lora_classbswitch_result)(int success,void* ctx);
-    int (*data_arrived)(esl_data_type_t type, uint8_t port, uint8_t* data, int len, void* ctx);
+    int (*on_connect)(int success, void *ctx); //LoRa classA:join result;LoRa classB:join and switch result;
+    int (*on_disconnect)(void *ctx);
+    int (*lora_classbswitch_result)(int success, void *ctx);
+    int (*data_arrived)(esl_data_type_t type, uint8_t port, uint8_t *data, int len, void *ctx);
 } esl_connection_ops_cb_t;
 
 #endif /* CONNECTION_H */

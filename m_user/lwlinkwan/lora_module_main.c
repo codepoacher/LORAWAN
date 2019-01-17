@@ -26,10 +26,11 @@
 
 #include "version.h"
 #include "utilities.h"
+#include "board.h"
 
 //#include "cmsis_os.h"
 //#include "lite-log.h"
-
+#include "lora_module_ica_at.h"
 #include "LoRaMac.h"
 #include "lora_module_controller.h"
 #include "lora_multicast_control.h"
@@ -49,33 +50,31 @@
 #include "frtos_drivers.h"
 #include "proto.h"
 
-static esl_connection_ops_cb_t* g_lora_esl_connection_ops_cb = NULL;
-static void*                    g_lora_cm_data               = NULL;
+static esl_connection_ops_cb_t *g_lora_esl_connection_ops_cb = NULL;
+static void                    *g_lora_cm_data               = NULL;
 
-static int g_config_lora_enable_join        = false;
-
-int lorawan_module_init(esl_connection_ops_cb_t* _esl_cm_ops_cb, void* data)
+int lorawan_module_init(esl_connection_ops_cb_t *_esl_cm_ops_cb, void *data)
 {
-    #ifdef USED_RTOS
+#ifdef USED_RTOS
     PRINTF("creat lora task.\r\n");
 
     osThreadDef(linkwanTask, lorawan_module_main, osPriorityHigh, 1, 512);
-    if(NULL == osThreadCreate(osThread(linkwanTask), NULL))
-    {
+    if (NULL == osThreadCreate(osThread(linkwanTask), NULL)) {
         log_err("task create failed\r\n");
     }
-    #endif
+#endif
     g_lora_esl_connection_ops_cb = _esl_cm_ops_cb;
     g_lora_cm_data = data;
     //assert_param(g_lora_esl_connection_ops_cb);
 
-    lorawan_init(_esl_cm_ops_cb,data);
+    lorawan_control_init(_esl_cm_ops_cb, data);
+    lorawan_at_init();
     return 0;
 }
 
 int lorawan_module_deinit(void)
 {
-    lorawan_deinit();
+    lorawan_control_deinit();
     //osThreadTerminate(osThreadGetId());
     return 0;
 }
@@ -86,48 +85,30 @@ void lorawan_module_main(void const *arg )
 
     while (true) {
 
-        #ifdef USED_RTOS
+#ifdef USED_RTOS
         //suspend
-        #endif
+#endif
 
         // Process Radio IRQ
-        if( Radio.IrqProcess != NULL )
-        {
+        if ( Radio.IrqProcess != NULL ) {
             Radio.IrqProcess( );
         }
-        LoRaMacProcess( );
-        devicestate = LORA_DeviceProcess( );
 
-        if(DEVICE_STATE_SLEEP != devicestate)
-        {
-            #ifdef USED_RTOS
+        lorawan_at_process();
+        LoRaMacProcess( );
+        devicestate = lorawan_control_process( );
+
+        if (DEVICE_STATE_SLEEP != devicestate) {
+#ifdef USED_RTOS
             //release
-            #endif
-        }
-        else
-        {
-            #ifdef USED_RTOS
-            
-            #else
+#endif
+        } else {
+#ifdef USED_RTOS
+
+#else
             // Wake up through events
             BoardLowPowerHandler( );
-            #endif
+#endif
         }
     }
 }
-
-
-/**************************************************************************************
- * * Description    : 定义通信任务结构
- * **************************************************************************************/
-#if 0
-static __const struct task linkwan = {
-	.idx   = LINKWAN_PID,
-	.name  = "linkwan",
-	.pro   = 3,
-	.depth = 512,
-	.main  = lorawan_module_main,
-};
-
-TASK_REGISTER(linkwan);
-#endif

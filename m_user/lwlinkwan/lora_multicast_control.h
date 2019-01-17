@@ -33,7 +33,7 @@
  *          -1:init failed.
  *           0:init succesful.
  */
-int lorawan_mc_init(uint8_t mcCmdPort, uint8_t* mcGenAppKey);
+int lorawan_mc_init(uint8_t mcCmdPort, uint8_t *mcGenAppKey);
 
 /*!
  * \brief   lorawan create a preset multicast channel
@@ -45,7 +45,7 @@ int lorawan_mc_init(uint8_t mcCmdPort, uint8_t* mcGenAppKey);
  *          -1:init failed.
  *           0:init succesful.
  */
-int lorawan_mc_set_preset_channel(uint8_t groupId, mcChannel_t* channel, mcKey_t* mckey);
+int lorawan_mc_set_preset_channel(uint8_t groupId, mcChannel_t *channel, mcKey_t *mckey);
 
 /*!
  * \brief   lorawan create a dynamic multicast channel
@@ -59,7 +59,7 @@ int lorawan_mc_set_preset_channel(uint8_t groupId, mcChannel_t* channel, mcKey_t
 int lorawan_mc_set_dynamic_channel(uint8_t groupId);
 
 /*!
- * \brief   lorawan send dynamic multicast commands answer 
+ * \brief   lorawan send dynamic multicast commands answer
  *
  * \param   NULL.
  *
@@ -70,7 +70,7 @@ int lorawan_mc_set_dynamic_channel(uint8_t groupId);
 int lorawan_mc_cmd_ans( void );
 
 /*!
- * \brief   lorawan process  dynamic multicast commands received 
+ * \brief   lorawan process  dynamic multicast commands received
  *
  * \param   buff:mc command buffer.
  *                cmdSize:buffer length contain mc command

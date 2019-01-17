@@ -164,6 +164,22 @@ typedef enum eActivationType
     ACTIVATION_TYPE_OTAA = 2,
 }ActivationType_t;
 
+typedef enum eNodeWorkMode
+{
+    /*!
+     * Node Tx and Rx will follow ICA Node(ClassA) Repeat behavior.
+     */
+    NODE_WORK_MODE_REPEATER = 1,
+    /*!
+     *  Node Tx and Rx will follow the LoRaWan standard.
+     */
+    NODE_WORK_MODE_NORMAL   = 2,
+    /*!
+     * NodeWorkMode will change between NodeWorkMode_Normal and NodeWorkMode_Repeater.
+     */
+    NODE_WORK_MODE_AUTOSWITCH = 3
+}NodeWorkMode_t;
+
 /*!
  * LoRaMac internal states
  */
@@ -253,6 +269,8 @@ typedef struct sRx2ChannelParams
      */
     uint8_t  Datarate;
 }Rx2ChannelParams_t;
+
+typedef Rx2ChannelParams_t RepeaterChannelParams_t;
 
 /*!
  * LoRaMAC receive window enumeration
@@ -588,7 +606,7 @@ typedef enum eLoRaMacEventInfoStatus
      */
     LORAMAC_EVENT_INFO_STATUS_DOWNLINK_TOO_MANY_FRAMES_LOSS,
     /*!
-     * Dynamic mullticast downlink counter is not minMcFCount â‰?McFCount < maxMcFCount 
+     * Dynamic mullticast downlink counter is not minMcFCount ï¿½?McFCount < maxMcFCount
      */
     LORAMAC_EVENT_INFO_STATUS_DOWNLINK_OUT_OF_COUNTER,
     /*!
@@ -1480,6 +1498,21 @@ typedef enum eMib
      */
     MIB_REPEATER_SUPPORT,
     /*!
+     * Support LBT
+     */
+    MIB_LBT,
+    /*!
+     * Set repeaters's channel parameters:freqency and datarate
+     *
+     * LoRaWAN Regional Parameters V1.0.2rB
+     *
+     */
+    MIB_REPEATER_CHANNEL_PARAM,
+    /*!
+     * Set freq mode
+     */
+    MIB_FREQ_MODE,
+    /*!
      * Communication channels. A get request will return a
      * pointer which references the first entry of the channel list. The
      * list is of size LORA_MAX_NB_CHANNELS
@@ -1487,6 +1520,12 @@ typedef enum eMib
      * LoRaWAN Regional Parameters V1.0.2rB
      */
     MIB_CHANNELS,
+    /*!
+     * Set receive RX1 offset
+     *
+     * LoRaWAN Specification V1.0.2, chapter 5.5
+     */
+    MIB_RX1_DROFFSET,
     /*!
      * Set receive window 2 channel
      *
@@ -1760,13 +1799,13 @@ typedef union uMibParam
      *
      * Related MIB type: \ref MIB_MC_GEN_APP_KEY
      */
-    uint8_t* McGenAppKey; 
+    uint8_t* McGenAppKey;
         /*!
      * Multicast key generate mckekey
      *
      * Related MIB type: \ref MIB_MC_ROOT_KEY
      */
-    uint8_t* McRootKey ; 
+    uint8_t* McRootKey ;
     /*!
      * Multicast key encryption key
      *
@@ -1857,6 +1896,28 @@ typedef union uMibParam
      * Related MIB type: \ref MIB_REPEATER_SUPPORT
      */
     bool EnableRepeaterSupport;
+    /*!
+     * Enable or disable lbt support
+     *
+     * Related MIB type: \ref MIB_LBT
+     */
+    bool LbtEnable;
+    /*!
+     * Freq mode type
+     *
+     * Related MIB type: \ref MIB_FREQ_MODE
+     */
+    uint8_t FreqMode;
+    /*!
+     * LoRaWAN Rx1DrOffset
+     *
+     * Related MIB type: \ref MIB_RX1_OFFSET
+     */
+    uint8_t Rx1DrOffset;
+    /*
+     * Repeater Channel Params
+     */
+    RepeaterChannelParams_t RepeaterChannelParam;
     /*!
      * LoRaWAN Channel
      *

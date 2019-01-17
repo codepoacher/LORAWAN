@@ -26,23 +26,22 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* Private function prototypes -----------------------------------------------*/
-typedef struct _app_context
-{
+typedef struct _app_context {
     int lora_conn_status;
 } app_context_t;
 
 /* Private functions ---------------------------------------------------------*/
-static int lora_on_connect(int success, void* ctx)
+static int lora_on_connect(int success, void *ctx)
 {
     return 0;
 }
 
-static int lora_on_disconnect(void* ctx)
+static int lora_on_disconnect(void *ctx)
 {
     return 0;
 }
 
-static int lora_data_arrived(esl_data_type_t type, uint8_t port, uint8_t* data, int len, void* ctx)
+static int lora_data_arrived(esl_data_type_t type, uint8_t port, uint8_t *data, int len, void *ctx)
 {
     return 0;
 }
@@ -70,12 +69,11 @@ int main( void )
 
     lorawan_module_init(&esl_lora_connection_ops_cb, &g_app_ctx);
 
-    #ifdef USED_RTOS
-        osKernelStart();
-    #else
-        while( 1 )
-        {
-            lorawan_module_main(NULL);
-        }
-    #endif
+#ifdef USED_RTOS
+    osKernelStart();
+#else
+    while ( 1 ) {
+        lorawan_module_main(NULL);
+    }
+#endif
 }

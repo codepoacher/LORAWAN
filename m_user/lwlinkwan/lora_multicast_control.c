@@ -19,21 +19,19 @@
 #include "LoRaMac.h"
 #include "lora_multicast_control.h"
 
-int lorawan_mc_init(uint8_t mcCmdPort, uint8_t* mcGenAppKey)
+int lorawan_mc_init(uint8_t mcCmdPort, uint8_t *mcGenAppKey)
 {
-    if (mcGenAppKey == NULL)
-    {
+    if (mcGenAppKey == NULL) {
         return -1;
     }
     return McInitialization( mcCmdPort, mcGenAppKey );
 }
 
-int lorawan_mc_set_preset_channel(uint8_t groupId, mcChannel_t* channel, mcKey_t* mckey)
+int lorawan_mc_set_preset_channel(uint8_t groupId, mcChannel_t *channel, mcKey_t *mckey)
 {
-    if (channel == NULL || mckey == NULL)
-    {
+    if (channel == NULL || mckey == NULL) {
         return -1;
-    }  
+    }
     return McCreatePresetChannel(groupId, channel, mckey);
 }
 

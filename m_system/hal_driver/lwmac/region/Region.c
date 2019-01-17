@@ -166,6 +166,8 @@
 #define CN470_SET_CONTINUOUS_WAVE( )               CN470_CASE { RegionCN470SetContinuousWave( continuousWave ); break; }
 #define CN470_APPLY_DR_OFFSET( )                   CN470_CASE { return RegionCN470ApplyDrOffset( downlinkDwellTime, dr, drOffset ); }
 #define CN470_RX_BEACON_SETUP( )                   CN470_CASE { RegionCN470RxBeaconSetup( rxBeaconSetup, outDr ); }
+#define CN470_REPEATER_PARAM_SETUP( )              CN470_CASE { RegionCN470RepeaterParamSetup( repeaterParam ); break;}
+#define CN470_FREQMODE_SETUP()                     CN470_CASE { RegionCN470FreqModeSetup( FreqMode ); break;}
 #else
 #define CN470_IS_ACTIVE( )
 #define CN470_GET_PHY_PARAM( )
@@ -191,6 +193,7 @@
 #define CN470_SET_CONTINUOUS_WAVE( )
 #define CN470_APPLY_DR_OFFSET( )
 #define CN470_RX_BEACON_SETUP( )
+#define CN470_REPEATER_PARAM_SETUP( )
 #endif
 
 #ifdef REGION_CN779
@@ -1075,3 +1078,46 @@ void RegionRxBeaconSetup( LoRaMacRegion_t region, RxBeaconSetup_t* rxBeaconSetup
         }
     }
 }
+
+void RegionRepeaterParamSetup( LoRaMacRegion_t region, RepeaterChannelParams_t* repeaterParam)
+{
+    switch( region )
+    {
+        NULL;
+        NULL;
+        CN470_REPEATER_PARAM_SETUP( );
+        NULL;
+        NULL;
+        NULL;
+        NULL;
+        NULL;
+        NULL;
+        NULL;
+        default:
+        {
+            break;
+        }
+    }
+}
+
+void RegionFreqModeSetup( LoRaMacRegion_t region, uint8_t FreqMode)
+{
+    switch( region )
+    {
+        NULL;
+        NULL;
+        CN470_FREQMODE_SETUP( );
+        NULL;
+        NULL;
+        NULL;
+        NULL;
+        NULL;
+        NULL;
+        NULL;
+        default:
+        {
+            break;
+        }
+    }
+}
+

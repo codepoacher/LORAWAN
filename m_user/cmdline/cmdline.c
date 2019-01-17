@@ -273,6 +273,7 @@ static int32_t cmdline_rx(int32_t idx, void *data, int32_t len)
 	uint8_t *tmp = (uint8_t *)data;
 	
 	for (; i < len; i++) {
+		lorawan_at_serial_input(tmp[i]);
 		if (tmp[i] != '\r') {
 			fdrive_write(DRIVER_LPUART, &tmp[i], 1);
 			/* 退格处理 */

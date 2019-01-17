@@ -85,6 +85,14 @@ typedef struct SysTime_s
     int16_t  SubSeconds;
 }SysTime_t;
 
+
+#if 0 
+#define PRINTF(...)     printf(__VA_ARGS__)
+#define PRINTNOW()      do{                                                           \
+                          SysTime_t stime  =SysTimeGet();                      \
+                          printf("%3lds%03d: ",stime.Seconds, stime.SubSeconds); \
+                         }while(0)
+#endif
 /*!
  * \brief Adds 2 SysTime_t values
  *
@@ -130,7 +138,7 @@ SysTime_t SysTimeGetMcuTime( void );
  * Converts the given SysTime to the equivalent RTC value in milliseconds
  *
  * \param [IN] sysTime System time to be converted
- * 
+ *
  * \retval timeMs The RTC converted time value in ms
  */
 uint32_t SysTime2Ms( SysTime_t sysTime );

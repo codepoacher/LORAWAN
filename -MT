@@ -1,8 +1,49 @@
-/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_cortex.o: \
- /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_hal_cortex.c \
+/home/wsg/lora-wan/LORAWAN/m_user/lwrun/sdk-main.o: \
+ /home/wsg/lora-wan/LORAWAN/m_user/lwrun/sdk-main.c \
+ /home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwboard/utilities.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwboard/board.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwboard/utilities.h \
+ /home/wsg/lora-wan/LORAWAN/m_user/lwlinkwan/connection.h \
+ /home/wsg/lora-wan/LORAWAN/m_user/lwlinkwan/lora_config.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwmac/LoRaMac.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwsystem/timer.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwsystem/systime.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwsx1276/radio.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwmac/LoRaMacTypes.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwmac/region/Region.h \
+ /home/wsg/lora-wan/LORAWAN/m_user/lwlinkwan/lora_module_export.h \
+ /home/wsg/lora-wan/LORAWAN/m_user/lwlinkwan/connection.h \
+ /home/wsg/lora-wan/LORAWAN/m_user/lwlinkwan/lora_module_common.h \
+ /home/wsg/lora-wan/LORAWAN/m_user/lwlinkwan/LoRaMacMulticast.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwmac/LoRaMacTypes.h \
+ /home/wsg/lora-wan/LORAWAN/m_user/lwrun/Commissioning.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/hal_driver/uart/uart_driver.h \
+ /home/wsg/lora-wan/LORAWAN/framework/module/frtos_types.h \
+ /home/wsg/lora-wan/LORAWAN/framework/freertos/include/FreeRTOS.h \
+ /home/wsg/lora-wan/LORAWAN/framework/FreeRTOSConfig.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/include/main.h \
+ /home/wsg/lora-wan/LORAWAN/framework/freertos/include/projdefs.h \
+ /home/wsg/lora-wan/LORAWAN/framework/freertos/include/portable.h \
+ /home/wsg/lora-wan/LORAWAN/framework/freertos/include/deprecated_definitions.h \
+ /home/wsg/lora-wan/LORAWAN/framework/freertos/portable/GCC/ARM_CM0/portmacro.h \
+ /home/wsg/lora-wan/LORAWAN/framework/freertos/include/mpu_wrappers.h \
+ /home/wsg/lora-wan/LORAWAN/framework/freertos/include/task.h \
+ /home/wsg/lora-wan/LORAWAN/framework/freertos/include/list.h \
+ /home/wsg/lora-wan/LORAWAN/framework/freertos/include/queue.h \
+ /home/wsg/lora-wan/LORAWAN/framework/freertos/include/timers.h \
+ /home/wsg/lora-wan/LORAWAN/framework/freertos/include/task.h \
+ /home/wsg/lora-wan/LORAWAN/framework/freertos/include/semphr.h \
+ /home/wsg/lora-wan/LORAWAN/framework/freertos/include/queue.h \
+ /home/wsg/lora-wan/LORAWAN/framework/module/frtos_ioctl/frtos_ioctl.h \
+ /home/wsg/lora-wan/LORAWAN/framework/module/frtos_queue/frtos_queue.h \
+ /home/wsg/lora-wan/LORAWAN/framework/module/frtos_error/frtos_errno.h \
+ /home/wsg/lora-wan/LORAWAN/framework/module/frtos_timer/frtos_softimer.h \
+ /home/wsg/lora-wan/LORAWAN/framework/module/frtos_lock/frtos_lock.h \
+ /home/wsg/lora-wan/LORAWAN/framework/module/frtos_driver/frtos_drivers.h \
+ /home/wsg/lora-wan/LORAWAN/framework/module/frtos_mem/frtos_mem.h \
+ /home/wsg/lora-wan/LORAWAN/framework/library/libloopbuf/loopbuf.h \
  /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal.h \
  /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/stm32l0xx_hal_conf.h \
- /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/include/main.h \
  /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rcc.h \
  /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_def.h \
  /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/CMSIS/Device/ST/STM32L0xx/Include/stm32l0xx.h \
@@ -34,13 +75,108 @@
  /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_tim.h \
  /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_tim_ex.h \
  /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart.h \
- /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart_ex.h
+ /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart_ex.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/include/config_driver.h \
+ /home/wsg/lora-wan/LORAWAN/framework/module/frtos_app/frtos_app.h \
+ /home/wsg/lora-wan/LORAWAN/m_user/include/config_user.h \
+ /home/wsg/lora-wan/LORAWAN/m_system/hal_driver/gpio/gpio_driver.h \
+ /home/wsg/lora-wan/LORAWAN/framework/module/frtos_irq/frtos_irq.h \
+ /home/wsg/lora-wan/LORAWAN/framework/module/frtos_list/frtos_list.h \
+ /home/wsg/lora-wan/LORAWAN/framework/module/frtos_io/frtos_gpio.h \
+ /home/wsg/lora-wan/LORAWAN/framework/module/frtos_boot/frtos_sys.h \
+ /home/wsg/lora-wan/LORAWAN/framework/library/libutils/frtos_utils.h \
+ /home/wsg/lora-wan/LORAWAN/m_user/protobuf/data.pb-c.h \
+ /home/wsg/lora-wan/LORAWAN/framework/library/protobuf-c/protobuf-c.h \
+ /home/wsg/lora-wan/LORAWAN/framework/module/frtos_delay/frtos_delay.h \
+ /home/wsg/lora-wan/LORAWAN/m_user/include/proto.h
+
+/home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwboard/utilities.h:
+
+/home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwboard/board.h:
+
+/home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwboard/utilities.h:
+
+/home/wsg/lora-wan/LORAWAN/m_user/lwlinkwan/connection.h:
+
+/home/wsg/lora-wan/LORAWAN/m_user/lwlinkwan/lora_config.h:
+
+/home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwmac/LoRaMac.h:
+
+/home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwsystem/timer.h:
+
+/home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwsystem/systime.h:
+
+/home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwsx1276/radio.h:
+
+/home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwmac/LoRaMacTypes.h:
+
+/home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwmac/region/Region.h:
+
+/home/wsg/lora-wan/LORAWAN/m_user/lwlinkwan/lora_module_export.h:
+
+/home/wsg/lora-wan/LORAWAN/m_user/lwlinkwan/connection.h:
+
+/home/wsg/lora-wan/LORAWAN/m_user/lwlinkwan/lora_module_common.h:
+
+/home/wsg/lora-wan/LORAWAN/m_user/lwlinkwan/LoRaMacMulticast.h:
+
+/home/wsg/lora-wan/LORAWAN/m_system/hal_driver/lwmac/LoRaMacTypes.h:
+
+/home/wsg/lora-wan/LORAWAN/m_user/lwrun/Commissioning.h:
+
+/home/wsg/lora-wan/LORAWAN/m_system/hal_driver/uart/uart_driver.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/module/frtos_types.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/freertos/include/FreeRTOS.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/FreeRTOSConfig.h:
+
+/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/include/main.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/freertos/include/projdefs.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/freertos/include/portable.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/freertos/include/deprecated_definitions.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/freertos/portable/GCC/ARM_CM0/portmacro.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/freertos/include/mpu_wrappers.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/freertos/include/task.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/freertos/include/list.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/freertos/include/queue.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/freertos/include/timers.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/freertos/include/task.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/freertos/include/semphr.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/freertos/include/queue.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/module/frtos_ioctl/frtos_ioctl.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/module/frtos_queue/frtos_queue.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/module/frtos_error/frtos_errno.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/module/frtos_timer/frtos_softimer.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/module/frtos_lock/frtos_lock.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/module/frtos_driver/frtos_drivers.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/module/frtos_mem/frtos_mem.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/library/libloopbuf/loopbuf.h:
 
 /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal.h:
 
 /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/stm32l0xx_hal_conf.h:
-
-/home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/include/main.h:
 
 /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_rcc.h:
 
@@ -105,3 +241,29 @@
 /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart.h:
 
 /home/wsg/lora-wan/LORAWAN/m_system/arch/s32l083/libhal/Drivers/STM32L0xx_HAL_Driver/Inc/stm32l0xx_hal_uart_ex.h:
+
+/home/wsg/lora-wan/LORAWAN/m_system/include/config_driver.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/module/frtos_app/frtos_app.h:
+
+/home/wsg/lora-wan/LORAWAN/m_user/include/config_user.h:
+
+/home/wsg/lora-wan/LORAWAN/m_system/hal_driver/gpio/gpio_driver.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/module/frtos_irq/frtos_irq.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/module/frtos_list/frtos_list.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/module/frtos_io/frtos_gpio.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/module/frtos_boot/frtos_sys.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/library/libutils/frtos_utils.h:
+
+/home/wsg/lora-wan/LORAWAN/m_user/protobuf/data.pb-c.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/library/protobuf-c/protobuf-c.h:
+
+/home/wsg/lora-wan/LORAWAN/framework/module/frtos_delay/frtos_delay.h:
+
+/home/wsg/lora-wan/LORAWAN/m_user/include/proto.h:

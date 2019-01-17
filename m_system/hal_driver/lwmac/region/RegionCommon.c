@@ -315,8 +315,10 @@ int8_t RegionCommonComputeTxPower( int8_t txPowerIndex, float maxEirp, float ant
 void RegionCommonCalcBackOff( RegionCommonCalcBackOffParams_t* calcBackOffParams )
 {
     uint8_t bandIdx = calcBackOffParams->Channels[calcBackOffParams->Channel].Band;
+    #if LORAWAN_DUTY_CYCLE_RESTRICT_ON //enable or diasble duty restrict
     uint16_t dutyCycle = calcBackOffParams->Bands[bandIdx].DCycle;
     uint16_t joinDutyCycle = 0;
+    #endif
 
     // Reset time-off to initial value.
     calcBackOffParams->Bands[bandIdx].TimeOff = 0;
