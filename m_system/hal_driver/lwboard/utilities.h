@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
-
+#include "uart_driver.h"
 /*!
  * Generic definition
  */

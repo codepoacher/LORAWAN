@@ -1645,7 +1645,7 @@ DeviceState_t lorawan_control_process(void)
                 PRINTF( "LoRa:OTAA\r\n");
                 PRINTF( "LoRa:DevEui= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n", HEX8(DevEui));
                 PRINTF( "LoRa:AppEui= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n", HEX8(JoinEui));
-                //PRINTF( "LoRa:AppKey= %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\r\n", HEX16(AppKey));
+                PRINTF( "LoRa:AppKey= %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\r\n", HEX16(AppKey));
                 PRINTF( "=======================================================\r\n" );
                 JoinNetwork( );
             } else {
@@ -2418,6 +2418,12 @@ int lorawan_control_init(esl_connection_ops_cb_t *_esl_cm_ops_cb, void *data)
     PRINTF( "LoRa:get AppEui= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n", HEX8(JoinEui));
     PRINTF( "LoRa:get AppKey= %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\r\n", HEX16(AppKey));
     PRINTF( "LoRa:get store freqband= %d, datarate= %d\r\n", g_store_freqband, g_join_datarate);
+    PRINTF( "=======================================================\r\n" );
+#else
+    PRINTF( "=======================================================\r\n" );
+    PRINTF( "LoRa:get DevEui= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n", HEX8(DevEui));
+    PRINTF( "LoRa:get AppEui= %02X-%02X-%02X-%02X-%02X-%02X-%02X-%02X\r\n", HEX8(JoinEui));
+    PRINTF( "LoRa:get AppKey= %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\r\n", HEX16(AppKey));
     PRINTF( "=======================================================\r\n" );
 #endif
 

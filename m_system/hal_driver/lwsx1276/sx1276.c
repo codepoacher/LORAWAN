@@ -1437,6 +1437,7 @@ void SX1276OnTimeoutIrq( void )
 
         // Reset the radio
         SX1276Reset( );
+		//lprint("TxTimeout\r\n");
 
         // Calibrate Rx chain
         RxChainCalibration( );

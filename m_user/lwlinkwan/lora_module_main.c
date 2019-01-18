@@ -91,7 +91,7 @@ void lorawan_module_main(void const *arg )
 
         // Process Radio IRQ
         if ( Radio.IrqProcess != NULL ) {
-            Radio.IrqProcess( );
+            //Radio.IrqProcess( );
         }
 
         lorawan_at_process();

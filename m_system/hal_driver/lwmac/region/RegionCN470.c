@@ -708,7 +708,7 @@ bool RegionCN470TxConfig( TxConfigParams_t* txConfig, int8_t* txPower, TimerTime
     Radio.SetChannel(frequency);
 
     Radio.SetTxConfig( MODEM_LORA, phyTxPower, 0, 0, phyDr, 1, preambleLen, false, true, 0, 0, iqInverted, 3000 );
-    PRINTNOW();PRINTF( "TX on freq %ld Hz at SF %d,channelIndex=%d,preambleLen=%d,isRepeaterMode:%d,iqInverted:%d.\n\r", frequency, phyDr,txConfig->Channel,preambleLen,txConfig->RepeaterSupport,iqInverted);
+	//PRINTNOW();PRINTF( "TX on freq %ld Hz at SF %d,channelIndex=%d,preambleLen=%d,isRepeaterMode:%d,iqInverted:%d.\n\r", frequency, phyDr,txConfig->Channel,preambleLen,txConfig->RepeaterSupport,iqInverted); //TODO::会导致发送超时？？？？？？ 
 
     // Setup maximum payload lenght of the radio driver
     Radio.SetMaxPayloadLength( MODEM_LORA, txConfig->PktLen );

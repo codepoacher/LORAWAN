@@ -85,6 +85,33 @@ static int hex2bin(const char *hex, uint8_t *bin, uint16_t bin_length)
     return cur - bin;
 }
 
+char *my_strtok(char *str,char *dl)  //TODO::使用strtok(NULL,",")会导致死机，原因不明
+{
+	static char *tmp;
+	char *ret;
+	
+	if(str == NULL)
+	{
+		if(*tmp == '\0') 
+			return  NULL;
+		str = tmp;
+		ret = tmp;
+	} else {
+		ret = str; 
+	}
+	while(*str != '\0')
+	{
+		if (*str == *dl) 
+		{
+			*str = '\0';
+			str++;
+			tmp = str;
+			break;
+		}
+		str++;
+	}
+	return ret;
+}
 static int lora_tx_data_payload(char *payload, uint8_t len)
 {
     return lorawan_module_send(lorawan_module_get_tx_cfm_flag(), lorawan_module_get_app_port(), payload, len, NULL);
@@ -585,7 +612,7 @@ static int at_exec_caddmulticast(char *str)
     int ret;
     char *param;
 
-    param = strtok(str, ",");
+    param = my_strtok(str, ",");
     hex2bin(param, (uint8_t *)&dev_addr, 4);
     dev_addr =
         ((dev_addr << 24) & (0xFF000000)) |
@@ -593,26 +620,26 @@ static int at_exec_caddmulticast(char *str)
         ((dev_addr >> 8) & (0x0000FF00)) |
         ((dev_addr >> 24) & (0x000000FF));
 
-    param = strtok(NULL, ",");
+    param = my_strtok(NULL, ",");
     if (param == NULL) {
         return AT_ERRNO_PARA_NUM;
     }
 
     hex2bin(param, mc_key, 16);
 
-    param = strtok(NULL, ",");
+    param = my_strtok(NULL, ",");
     if (param == NULL) {
         return AT_ERRNO_PARA_NUM;
     }
     frequency = strtol(param, NULL, 0);
 
-    param = strtok(NULL, ",");
+    param = my_strtok(NULL, ",");
     if (param == NULL) {
         return AT_ERRNO_PARA_NUM;
     }
     dr = strtol(param, NULL, 0);
 
-    param = strtok(NULL, ",");
+    param = my_strtok(NULL, ",");
     if (param == NULL) {
         return AT_ERRNO_PARA_NUM;
     }
@@ -687,12 +714,12 @@ static int at_exec_cclass(char *str)
     int8_t class;
     char *param;
 
-    param = strtok(str, ",");
+    param = my_strtok(str, ",");
     class = strtol(param, NULL, 0);
 
     /* only branch 0 support */
     if (class == CLASS_B) {
-        param = strtok(NULL, ",");
+        param = my_strtok(NULL, ",");
         if (param != NULL) {
             branch = strtol(param, NULL, 0);
 
@@ -700,7 +727,7 @@ static int at_exec_cclass(char *str)
                 return AT_ERRNO_PARA_NUM;
             }
 
-            param = strtok(NULL, ",");
+            param = my_strtok(NULL, ",");
             if (param == NULL) {
                 return AT_ERRNO_PARA_NUM;
             }
@@ -725,28 +752,28 @@ static int at_exec_cjoin(char *str)
     int ret;
     char *param;
 
-    param = strtok(str, ",");
-
-    /* check start or stop join parameter */
+    param = my_strtok(str, ",");
+	/* check start or stop join parameter */
     bJoin = strtol(param, NULL, 0);
+    //bJoin = 1;
     if (bJoin != 1 && bJoin != 0) {
         return AT_ERRNO_PARA_VAL;
     }
+	
+	/* check auto join parameter */
+	param = my_strtok(NULL, ",");
 
-    /* check auto join parameter */
-    param = strtok(NULL, ",");
-    if (param != NULL) {
-        autoJoin = strtol(param, NULL, 0);
-        if (autoJoin != 1 && autoJoin != 0) {
-            return AT_ERRNO_PARA_VAL;
-        }
+	if (param != NULL) {
+		autoJoin = strtol(param, NULL, 0);
+		if (autoJoin != 1 && autoJoin != 0) {
+			return AT_ERRNO_PARA_VAL;
+		}
 
-        ret = lorawan_module_set_auto_join(autoJoin);
-        if (ret != 0) {
+		ret = lorawan_module_set_auto_join(autoJoin);
+		if (ret != 0) {
             return ret;
         }
     }
-
     ret = lorawan_module_join(bJoin);
 
     return ret;
@@ -760,9 +787,9 @@ static int at_exec_dtx(char *str)
     int ret;
     char *param;
 
-    param = strtok(str, ",");
+    param = my_strtok(str, ",");
     str_len = strtol(param, NULL, 0);
-    param = strtok(NULL, ",");
+    param = my_strtok(NULL, ",");
     if (param == NULL) {
         return AT_ERRNO_PARA_NUM;
     }
@@ -837,9 +864,9 @@ static int at_exec_cnbtrials(char *str)
     int8_t value;
     char *param;
 
-    param = strtok(str, ",");
+    param = my_strtok(str, ",");
     m_type = strtol(param, NULL, 0);
-    param = strtok(NULL, ",");
+    param = my_strtok(NULL, ",");
     if (param == NULL) {
         return AT_ERRNO_PARA_NUM;
     }
@@ -860,10 +887,10 @@ static int at_exec_crm(char *str)
     uint32_t reportInterval;
     char *param;
 
-    param = strtok(str, ",");
+    param = my_strtok(str, ",");
     reportMode = strtol(param, NULL, 0);
 
-    param = strtok(NULL, ",");
+    param = my_strtok(NULL, ",");
     if (param != NULL) {
         reportInterval = strtol(param, NULL, 0);
     } else if (param == NULL && reportMode == 1) {
@@ -929,9 +956,9 @@ static int at_exec_crxp(char *str)
     char *param;
     int ret;
 
-    param = strtok(str, ",");
+    param = my_strtok(str, ",");
     RX1DRoffset  = strtol(param, NULL, 0);
-    param = strtok(NULL, ",");
+    param = my_strtok(NULL, ",");
     if (param == NULL) {
         return AT_ERRNO_PARA_NUM;
     }

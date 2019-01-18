@@ -84,7 +84,7 @@ static rx_cb_t rx_cb(uint8_t *data, int len)
   * @param  None
   * @retval None
   */
-static int32_t linkwan_run( void )
+static void linkwan_run( void )
 {
     BoardInitMcu( );
     BoardInitPeriph( );

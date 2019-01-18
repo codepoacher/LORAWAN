@@ -108,8 +108,8 @@ typedef enum node_freq_mode_s {
 } LoRaNodeFreqMode_t;
 
 #define LORA_NODE_WORKMODE                           NODE_WORK_MODE_NORMAL
-#define LORA_NODE_TARGET_CLASS_TYPE                  CLASS_A
-#define LORA_NODE_FREQ_TYPE                          FREQ_MODE_INTER
+#define LORA_NODE_TARGET_CLASS_TYPE                  CLASS_B
+#define LORA_NODE_FREQ_TYPE                          FREQ_MODE_INTRA
 
 #define LORA_JOIN_FREQBAND_MASK                      (0x0003)//Default:0x0003(1A1+1A2),0x000C(2A1+2A2),0x3000(3B1+3B2),0xC000(4B1+4B2).
 #define LORA_STORE_FREQBAND                          (1) //1A2
@@ -134,7 +134,7 @@ typedef enum node_freq_mode_s {
 
 #define LORA_NODE_DISABLE_JOIN_BACKOFF               (1)
 #define LORA_NODE_DISABLE_CLASS_SWITCH_BACKOFF       (1)
-#define LORA_MODULE_GET_FLASH_EUI_ENABLE             (1)
+#define LORA_MODULE_GET_FLASH_EUI_ENABLE             (0)
 
 #define LORA_NODE_STROED_JOIN_RETRY_CNT              (3)
 #define LORA_NODE_DEF_JOIN_RETRY_CNT                 (3)

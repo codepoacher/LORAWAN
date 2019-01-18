@@ -16,7 +16,7 @@
 * Description    : 串口配置
 **************************************************************************************/
 #define UART_TXBUF_LEN					256				//uart3发送缓冲区大小
-#define LPUART_BAUD						9600			//lpuart波特率
+#define LPUART_BAUD						921600			//lpuart波特率
 #define LPUART_RXBUF_LEN				256			    //lpuart接收缓冲区长度
 #define LPUART_RXQUEUE_LEN				10				//lpuart接收队列长度
 #define LPUART_RXQUEUE_SIZE				4				//lpuart接收队列元素大小
