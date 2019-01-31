@@ -89,7 +89,6 @@ void lorawan_module_main(void const *arg )
         //suspend
 #endif
 
-        // Process Radio IRQ
         if ( Radio.IrqProcess != NULL ) {
             //Radio.IrqProcess( );
         }

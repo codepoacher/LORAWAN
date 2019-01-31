@@ -59,12 +59,14 @@ static int32_t e2prom_read(uint8_t idx, void *data, int32_t len)
 uint8_t EepromWriteBuffer( uint16_t addr, uint8_t *buffer, uint16_t size )
 {
 	struct e2prom_s edata;       //TODO::e2prom
+	lprint("write e2prom addr=%d\r\n",addr);
 	COMM_WRITE(edata,buffer,addr,size);
 }
 
 uint8_t EepromReadBuffer( uint16_t addr, uint8_t *buffer, uint16_t size )
 {
 	struct e2prom_s edata;   //TODO::e2prom
+	lprint("read e2prom addr=%d\r\n",addr);
 	COMM_READ(edata,buffer,addr,size);
 }
 /**************************************************************************************

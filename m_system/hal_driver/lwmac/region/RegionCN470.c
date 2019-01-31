@@ -676,7 +676,7 @@ bool RegionCN470RxConfig( RxConfigParams_t* rxConfig, int8_t* datarate )
     }
     Radio.SetMaxPayloadLength( MODEM_LORA, maxPayload + LORA_MAC_FRMPAYLOAD_OVERHEAD );
 
-    PRINTNOW();PRINTF("RX on freq %ld Hz at SF %d,channelIndex=%d,isRepeaterMode:%d,iqInverted:%d.\n\r", frequency, phyDr,rxConfig->Channel,rxConfig->RepeaterSupport,iqInverted);
+    //PRINTNOW();PRINTF("RX on freq %ld Hz at SF %d,channelIndex=%d,isRepeaterMode:%d,iqInverted:%d.\n\r", frequency, phyDr,rxConfig->Channel,rxConfig->RepeaterSupport,iqInverted);
 
     *datarate = (uint8_t) dr;
     return true;
